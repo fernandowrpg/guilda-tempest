@@ -405,6 +405,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px}
       <div class="rules">
         <ul>
           <li><b>Criaturas de ND igual</b> contam como uma só. ND &lt; 1: some os NDs. ND ≥ 1: +2 no ND cada vez que a quantidade dobra (1→ND, 2→+2, 4→+4, 8→+6…).</li>
+          <li><b>Tesouro:</b> tabela “Dinheiro Médio por cena” (ND 1 = 300 … ND 20 = 72.000). Valores com fração são arredondados para cima.</li>
           <li><b>Sobras</b> (ex.: 3 criaturas = 2 + 1): por padrão, a que sobra vira um grupo próprio e entra na etapa seguinte. Dá para trocar abaixo.</li>
           <li><b>Criaturas de ND diferente:</b> maior ND, +1 para cada uma 1 ND abaixo, +0,5 para 2 abaixo, +0,25 para 3 abaixo; 4 ou mais abaixo não contam. Diferenças fracionadas arredondam para cima.</li>
           <li>Se depois de juntar os grupos aparecerem NDs iguais de novo, eles são juntados outra vez.</li>
@@ -432,13 +433,15 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px}
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-/* ===== Tabela "Dinheiro Médio por cena" =====
-   Preencha com os valores da guilda (ND/nível → T$).
-   Valores vazios deixam o campo "T$ base" para preenchimento manual. */
+/* ===== Tabela "Dinheiro Médio por cena" (ND/nível → T$) ===== */
 const DINHEIRO_MEDIO = {
-  4: 1000,
-  20: 72000,
+  1: 300, 2: 300, 3: 400, 4: 1000, 5: 1000,
+  6: 2000, 7: 2000, 8: 3000, 9: 3000, 10: 6000,
+  11: 8000, 12: 9000, 13: 13000, 14: 17000, 15: 22000,
+  16: 22000, 17: 40000, 18: 50000, 19: 60000, 20: 72000,
 };
+// ND menor que 1 recebe a fração proporcional do ND 1.
+const dinheiroMedio = nd => nd < 1 ? Math.ceil(DINHEIRO_MEDIO[1] * nd) : DINHEIRO_MEDIO[Math.round(nd)];
 
 const DIFICULDADES = {
   normal:   { nome: 'Normal',      curto: 'Normal',   desc: 'ND +0 · 40%', offset: 0, pct: 0.40 },
@@ -461,7 +464,7 @@ function fmtND(n) {
   if (n === 0.75) return '3/4';
   return Number.isInteger(n) ? String(n) : String(n).replace('.', ',');
 }
-const fmtNum = n => Math.round(n).toLocaleString('pt-BR');
+const fmtNum = n => (Math.ceil(n - 1e-9) || 0).toLocaleString('pt-BR');
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const ndValue = v => { const n = parseFloat(v); return isFinite(n) && n > 0 ? n : 1; };
 function ndOptionsHTML(sel) {
@@ -642,7 +645,7 @@ function atualizar() {
   $('#m-target').innerHTML = semND
     ? `<span class="tnd">?</span><span>Missão sem ND: sem dificuldade. Recompensa = 1/3 do XP do nível e 1/3 da recompensa média do nível.</span>`
     : `<span class="tnd">ND ${fmtND(alvo)}</span><span>é o ND que os encontros devem ter (missão ND ${fmtND(S.nd)}${dif.offset ? ' +' + dif.offset : ''}). XP das ameaças: <b>${dif.pct * 100}%</b>.</span>`;
-  const tsTabela = DINHEIRO_MEDIO[semND ? S.nivel : S.nd];
+  const tsTabela = dinheiroMedio(semND ? S.nivel : S.nd);
   $('#m-ts').placeholder = tsTabela != null ? `tabela: ${fmtNum(tsTabela)}` : 'preencher';
 
   // Resultado por encontro
@@ -721,7 +724,7 @@ function postagemTexto() {
   const P = S.post;
   const dif = DIFICULDADES[S.dif];
   const semND = dif.offset === null;
-  const tsTabela = DINHEIRO_MEDIO[semND ? S.nivel : S.nd];
+  const tsTabela = dinheiroMedio(semND ? S.nivel : S.nd);
   const ts = S.ts !== '' && S.ts != null ? +S.ts : tsTabela;
   const L = [];
   L.push(`📍 Local: ${P.local}`);
@@ -771,7 +774,7 @@ function resumoTexto() {
     linhas.push(`• ${e.nome}: ${r ? 'ND ' + fmtND(r.nd) : 'sem criaturas'} — ${lista || 'vazio'}`);
   }
   const total = S.encontros.reduce((s, e) => s + xpAmeacas(e), 0);
-  const tsTabela = DINHEIRO_MEDIO[S.nd];
+  const tsTabela = dinheiroMedio(S.nd);
   const ts = S.ts !== '' ? +S.ts : tsTabela;
   linhas.push(`Sucesso: ${fmtNum(1000 * S.nd + total * dif.pct)} XP${ts != null ? ` + T$ ${fmtNum(ts)}` : ''} + 0,5 PeA`);
   linhas.push(`Falha: ${fmtNum(500 * S.nd + total * PCT_FALHA)} XP`);
