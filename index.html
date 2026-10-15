@@ -2,115 +2,341 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Calculadora de Encontros — Guilda Tempest</title>
 <meta name="description" content="Calcula o ND de encontros, a dificuldade e as recompensas das missões da Guilda Tempest (Tormenta 20).">
+<meta name="theme-color" content="#14172b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235b4ee0'/%3E%3Cpath d='M18 4 8 18h7l-2 10 11-15h-7z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f4f2ee; --panel:#ffffff; --panel-2:#f8f7f4; --ink:#1d1b18; --muted:#6b665e;
-  --line:#e2ded6; --accent:#5b3fc4; --accent-ink:#ffffff; --accent-soft:#ece8fb;
-  --ok:#1f7a4a; --ok-soft:#e3f3ea; --warn:#9a5b00; --warn-soft:#fbefd9; --bad:#b3261e; --bad-soft:#fbe4e2;
-  --radius:12px; --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.04);
+  --bg:#eef0f7; --bg-2:#e4e7f2; --panel:#ffffff; --panel-2:#f5f6fb; --ink:#161a2e; --muted:#5d6380;
+  --line:#dde0ec; --line-2:#c9cee2;
+  --accent:#5b4ee0; --accent-2:#3d8bfd; --accent-ink:#ffffff; --accent-soft:#ebe9fd;
+  --ok:#17784a; --ok-soft:#dff3e8; --warn:#9a5b00; --warn-soft:#fcefd6; --bad:#b3261e; --bad-soft:#fbe3e1;
+  --c-criatura:#5b4ee0; --c-armadilha:#c26a00; --c-perigo:#0f8a8a;
+  --d-normal:#17784a; --d-dificil:#b06a00; --d-valkaria:#6d4bd8; --d-tormenta:#c0262d; --d-semnd:#5d6380;
+  --radius:16px; --radius-sm:10px;
+  --shadow:0 1px 2px rgba(22,26,46,.06),0 8px 24px rgba(22,26,46,.06);
+  --hero-1:#1b1f3b; --hero-2:#2c2470; --hero-ink:#f3f2ff; --hero-muted:#b7b4e6;
+  --display:"Cinzel",Georgia,serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#131218; --panel:#1c1b22; --panel-2:#23222b; --ink:#ecebf0; --muted:#a19eab;
-    --line:#2f2d38; --accent:#a08cf5; --accent-ink:#15131c; --accent-soft:#2a2540;
-    --ok:#6fd39c; --ok-soft:#18301f; --warn:#f0b65a; --warn-soft:#33270f; --bad:#ff8a80; --bad-soft:#3a1b1a;
-    --shadow:none;
+    --bg:#0c0e1c; --bg-2:#10132a; --panel:#151933; --panel-2:#1b2040; --ink:#e9eaf7; --muted:#9ca1c3;
+    --line:#262c52; --line-2:#343b6a;
+    --accent:#8f85ff; --accent-2:#6aa8ff; --accent-ink:#0f1024; --accent-soft:#25264f;
+    --ok:#6fd8a0; --ok-soft:#15302a; --warn:#f3bb5d; --warn-soft:#352812; --bad:#ff8f86; --bad-soft:#3b1c22;
+    --c-criatura:#8f85ff; --c-armadilha:#f0a54a; --c-perigo:#4fd1c5;
+    --d-normal:#6fd8a0; --d-dificil:#f3bb5d; --d-valkaria:#b39cff; --d-tormenta:#ff7a7a; --d-semnd:#9ca1c3;
+    --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 10px 30px rgba(0,0,0,.35);
+    --hero-1:#151a3a; --hero-2:#2a1f66;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#131218; --panel:#1c1b22; --panel-2:#23222b; --ink:#ecebf0; --muted:#a19eab;
-  --line:#2f2d38; --accent:#a08cf5; --accent-ink:#15131c; --accent-soft:#2a2540;
-  --ok:#6fd39c; --ok-soft:#18301f; --warn:#f0b65a; --warn-soft:#33270f; --bad:#ff8a80; --bad-soft:#3a1b1a;
-  --shadow:none;
+  --bg:#0c0e1c; --bg-2:#10132a; --panel:#151933; --panel-2:#1b2040; --ink:#e9eaf7; --muted:#9ca1c3;
+  --line:#262c52; --line-2:#343b6a;
+  --accent:#8f85ff; --accent-2:#6aa8ff; --accent-ink:#0f1024; --accent-soft:#25264f;
+  --ok:#6fd8a0; --ok-soft:#15302a; --warn:#f3bb5d; --warn-soft:#352812; --bad:#ff8f86; --bad-soft:#3b1c22;
+  --c-criatura:#8f85ff; --c-armadilha:#f0a54a; --c-perigo:#4fd1c5;
+  --d-normal:#6fd8a0; --d-dificil:#f3bb5d; --d-valkaria:#b39cff; --d-tormenta:#ff7a7a; --d-semnd:#9ca1c3;
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 10px 30px rgba(0,0,0,.35);
+  --hero-1:#151a3a; --hero-2:#2a1f66;
 }
+
 *{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
 html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 64px}
-header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:20px}
-h1{font-size:1.6rem;margin:0;letter-spacing:-.01em}
-h1 small{display:block;font-size:.85rem;font-weight:500;color:var(--muted);letter-spacing:0}
-h2{font-size:1.05rem;margin:0 0 12px}
-h3{font-size:.95rem;margin:0}
-.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
-@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
-.sticky{position:sticky;top:16px}
-@media (max-width:860px){.sticky{position:static}}
-label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:4px;font-weight:600}
-input,select,button{font:inherit;color:inherit}
-textarea{resize:vertical;font-family:inherit}
-input[type=text],input[type=number],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2)}
-input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-.btn{border:1px solid var(--line);background:var(--panel-2);padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
-.btn:hover{border-color:var(--accent)}
-.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.btn.ghost{background:transparent;border-color:transparent;color:var(--muted);padding:6px 8px}
-.btn.ghost:hover{color:var(--bad)}
-.row-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.enc-head{display:flex;gap:8px;align-items:center;margin-bottom:12px}
-.enc-head input{font-weight:700}
-.threat{display:grid;grid-template-columns:130px minmax(0,1fr) 90px 70px 80px 34px;gap:8px;align-items:end;padding:10px 0;border-top:1px dashed var(--line)}
-.threat:first-of-type{border-top:0}
-.threat .chk{display:flex;align-items:center;gap:6px;font-size:.85rem;height:38px;white-space:nowrap}
-@media (max-width:640px){
-  .threat{grid-template-columns:1fr 1fr;}
-  .threat .name{grid-column:1 / -1;order:-1}
-  .threat .del{justify-self:end}
+body{
+  background:radial-gradient(1200px 500px at 80% -10%,var(--bg-2),transparent 60%),var(--bg);
+  background-attachment:fixed;
+  color:var(--ink);font:15px/1.5 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  min-height:100vh;
 }
-.threat .lbl-m{display:none}
-@media (max-width:640px){.threat .lbl-m{display:block}}
-.thead{display:grid;grid-template-columns:130px minmax(0,1fr) 90px 70px 80px 34px;gap:8px;font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
-@media (max-width:640px){.thead{display:none}}
-.result{margin-top:14px;padding:12px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line)}
-.result .big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.result .nd{font-size:1.6rem;font-weight:800}
-.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.8rem;font-weight:700}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 72px}
+h1,h2,h3{margin:0}
+.display{font-family:var(--display);letter-spacing:.02em}
+
+/* ---------- Hero ---------- */
+.hero{
+  position:relative;overflow:hidden;border-radius:var(--radius);
+  background:linear-gradient(135deg,var(--hero-1),var(--hero-2));
+  color:var(--hero-ink);padding:22px 22px 20px;margin-bottom:18px;box-shadow:var(--shadow);
+}
+.hero::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(400px 160px at 15% 0%,rgba(143,133,255,.35),transparent 70%),
+    radial-gradient(300px 140px at 95% 110%,rgba(106,168,255,.25),transparent 70%);
+}
+.hero-bolt{position:absolute;right:-10px;top:-18px;width:180px;height:180px;opacity:.12;pointer-events:none}
+.hero-inner{position:relative;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.brand-mark{flex:none;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18)}
+.brand h1{font-family:var(--display);font-size:clamp(1.25rem,4.2vw,1.75rem);font-weight:800;line-height:1.15;letter-spacing:.03em}
+.brand p{margin:2px 0 0;color:var(--hero-muted);font-size:.85rem}
+.hero-actions{display:flex;gap:8px;flex-wrap:wrap}
+.hbtn{
+  display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 12px;border-radius:10px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:var(--hero-ink);font:600 .85rem/1 inherit;
+}
+.hbtn:hover{background:rgba(255,255,255,.16)}
+.hbtn svg{width:16px;height:16px}
+
+/* ---------- Layout ---------- */
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
+.sticky{position:sticky;top:16px}
+@media (max-width:920px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .sticky{position:static}
+}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:18px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.card-title{display:flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:700}
+.card-title .ico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);flex:none}
+.card-title .ico svg{width:17px;height:17px}
+.step{white-space:nowrap;font:700 .7rem/1 inherit;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* ---------- Form ---------- */
+label,.lbl{display:block;font-size:.78rem;color:var(--muted);margin-bottom:6px;font-weight:600}
+input,select,button,textarea{font:inherit;color:inherit}
+input[type=text],input[type=number],select,textarea{
+  width:100%;min-height:42px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--panel-2);transition:border-color .15s,box-shadow .15s;
+}
+textarea{resize:vertical;line-height:1.45}
+select{appearance:none;-webkit-appearance:none;padding-right:34px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%238a90b0' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center}
+input:hover,select:hover,textarea:hover{border-color:var(--line-2)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:14px}
+.field-wide{grid-column:1 / -1}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;
+  border:1px solid var(--line);background:var(--panel-2);padding:8px 14px;border-radius:var(--radius-sm);
+  cursor:pointer;font-weight:600;font-size:.9rem;transition:border-color .15s,background .15s,transform .05s}
+.btn:hover{border-color:var(--accent)}
+.btn:active{transform:translateY(1px)}
+.btn svg{width:16px;height:16px;flex:none}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border-color:transparent}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.block{width:100%}
+.icon-btn{width:36px;height:36px;display:inline-grid;place-items:center;border-radius:9px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;flex:none}
+.icon-btn:hover{color:var(--bad);background:var(--bad-soft)}
+.icon-btn svg{width:16px;height:16px}
+
+/* ---------- Difficulty picker ---------- */
+.diff{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:16px}
+@media (max-width:640px){.diff{grid-template-columns:repeat(2,minmax(0,1fr))}.diff .opt:last-child{grid-column:1 / -1}}
+.diff .opt{position:relative}
+.diff input{position:absolute;opacity:0;pointer-events:none}
+.diff label{
+  margin:0;display:flex;flex-direction:column;gap:2px;height:100%;padding:10px 12px;border-radius:12px;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel-2);color:var(--ink);transition:all .15s;
+  border-top:3px solid var(--dc);
+}
+.diff label b{font-size:.9rem}
+.diff label span{font-size:.75rem;color:var(--muted);font-weight:500}
+.diff label:hover{border-color:var(--dc)}
+.diff input:checked + label{background:color-mix(in srgb,var(--dc) 14%,var(--panel));border-color:var(--dc);box-shadow:0 0 0 1px var(--dc) inset}
+.diff input:focus-visible + label{outline:2px solid var(--accent);outline-offset:2px}
+
+.target{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--accent-soft);color:var(--ink);font-size:.9rem}
+.target .tnd{font-family:var(--display);font-weight:800;font-size:1.35rem;color:var(--accent);white-space:nowrap}
+
+/* ---------- Encounters ---------- */
+.enc{padding:0;overflow:hidden}
+.enc-top{display:flex;align-items:center;gap:10px;padding:14px 14px 12px 18px;border-bottom:1px solid var(--line)}
+.enc-num{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:.85rem}
+.enc-top input{border-color:transparent;background:transparent;font-weight:700;font-size:1rem;padding-left:6px;min-width:0}
+.enc-top input:hover{border-color:var(--line)}
+.enc-body{padding:6px 18px 18px}
+
+.thead,.threat{display:grid;grid-template-columns:150px minmax(0,1fr) 92px 118px 92px 36px;gap:10px;align-items:center}
+.thead{padding:10px 0 6px;font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.threat{position:relative;padding:10px 0 10px 12px;border-top:1px solid var(--line)}
+.threat::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:3px;background:var(--tc,var(--c-criatura))}
+.threat[data-tipo=armadilha]{--tc:var(--c-armadilha)}
+.threat[data-tipo=perigo]{--tc:var(--c-perigo)}
+.threat .lbl{display:none}
+.threat .t-tipo select{font-weight:600;color:var(--tc,var(--c-criatura))}
+
+.stepper{display:flex;align-items:stretch;height:42px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-2);overflow:hidden}
+.stepper:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.stepper button{width:34px;border:0;background:transparent;cursor:pointer;color:var(--muted);font-size:1.1rem;font-weight:700;flex:none}
+.stepper button:hover{color:var(--accent);background:var(--accent-soft)}
+.stepper input{border:0 !important;background:transparent !important;box-shadow:none !important;text-align:center;padding:0 2px;min-height:0;height:100%;min-width:0;font-weight:700}
+
+.switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;font-weight:600;color:var(--muted);user-select:none;margin:0}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch .track{position:relative;width:36px;height:22px;border-radius:999px;background:var(--line-2);transition:background .15s;flex:none}
+.switch .track::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.switch input:checked + .track{background:var(--d-tormenta)}
+.switch input:checked + .track::after{transform:translateX(14px)}
+.switch input:checked ~ .txt{color:var(--d-tormenta)}
+.switch input:focus-visible + .track{outline:2px solid var(--accent);outline-offset:2px}
+.t-chefe .na{font-size:.8rem;color:var(--muted);opacity:.6}
+
+.add-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.add-row .btn{flex:1 1 auto}
+.add-row .dot{width:8px;height:8px;border-radius:50%;background:var(--tc)}
+
+@media (max-width:700px){
+  .thead{display:none}
+  .threat{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px;
+    grid-template-areas:"nome nome del" "tipo nd nd" "qtd chefe chefe";
+    gap:10px;padding:14px 0 14px 14px;
+  }
+  .threat .lbl{display:block;margin-bottom:4px}
+  .t-nome{grid-area:nome}
+  .t-del{grid-area:del;justify-self:end;align-self:start}
+  .t-tipo{grid-area:tipo}.t-nd{grid-area:nd}.t-qtd{grid-area:qtd}
+  .t-chefe{grid-area:chefe;align-self:end;height:42px;display:flex;align-items:center}
+}
+
+.result{margin-top:14px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:start;
+  padding:14px;border-radius:14px;background:var(--panel-2);border:1px solid var(--line)}
+.nd-badge{width:86px;height:86px;border-radius:16px;display:grid;place-items:center;text-align:center;
+  background:var(--panel);border:2px solid var(--sc,var(--line-2));color:var(--sc,var(--ink))}
+.nd-badge small{display:block;font:700 .62rem/1 inherit;letter-spacing:.12em;color:var(--muted);margin-bottom:2px}
+.nd-badge b{font-family:var(--display);font-size:1.9rem;line-height:1}
+.result.ok{--sc:var(--ok)}.result.warn{--sc:var(--warn)}.result.bad{--sc:var(--bad)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.78rem;font-weight:700}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
 .pill.ok{background:var(--ok-soft);color:var(--ok)}
 .pill.warn{background:var(--warn-soft);color:var(--warn)}
 .pill.bad{background:var(--bad-soft);color:var(--bad)}
-.steps{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:.88rem}
-.steps li{margin:2px 0}
-.kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)}
+.steps{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:.84rem}
+.steps li{margin:3px 0}
+.steps li::marker{color:var(--accent);font-weight:700}
+.meta{margin-top:8px;font-size:.8rem;color:var(--muted)}
+.meta b{color:var(--ink)}
+@media (max-width:480px){
+  .result{grid-template-columns:minmax(0,1fr)}
+  .nd-badge{width:100%;height:auto;padding:10px;display:flex;justify-content:center;align-items:baseline;gap:8px}
+  .nd-badge small{margin:0}
+}
+
+.add-enc{width:100%;min-height:52px;border:2px dashed var(--line-2);background:transparent;border-radius:var(--radius);color:var(--muted);font-weight:700;margin-bottom:18px}
+.add-enc:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+
+/* ---------- Summary ---------- */
+.reward-hero{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat{padding:12px;border-radius:12px;background:var(--panel-2);border:1px solid var(--line)}
+.stat small{display:block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.stat b{display:block;font-size:1.25rem;font-weight:800;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat.xp b{color:var(--accent)}
+.stat.full{grid-column:1 / -1}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:.9rem}
 .kv:last-child{border-bottom:0}
-.kv span:first-child{color:var(--muted)}
+.kv span{color:var(--muted)}
 .kv strong{text-align:right}
-.total{font-size:1.25rem}
-.section-title{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:14px 0 4px}
-.note{font-size:.82rem;color:var(--muted);margin:8px 0 0}
-details{margin-top:4px}
-summary{cursor:pointer;font-weight:600}
-details .rules{font-size:.88rem;color:var(--muted)}
-details .rules ul{padding-left:18px}
-.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
-.toast.show{opacity:1}
+.kv.total strong{font-size:1.05rem}
+.section-title{display:flex;align-items:center;gap:8px;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;margin:14px 0 2px}
+.section-title::after{content:"";flex:1;height:1px;background:var(--line)}
+.section-title.ok{color:var(--ok)}.section-title.bad{color:var(--bad)}
+.note{font-size:.8rem;color:var(--muted);margin:10px 0 0}
+
+/* ---------- Post ---------- */
+.post-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media (max-width:780px){.post-grid{grid-template-columns:minmax(0,1fr)}}
+.preview{white-space:pre-wrap;word-break:break-word;margin:0;min-height:260px;max-height:520px;overflow:auto;
+  padding:14px 16px;border-radius:12px;background:#313338;color:#dbdee1;border:1px solid #1e1f22;
+  font:14px/1.4 "gg sans","Inter",system-ui,sans-serif}
+.preview-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.preview-head .dot{width:10px;height:10px;border-radius:50%;background:#5865f2}
+
+/* ---------- Rules ---------- */
+details summary{cursor:pointer;font-weight:700;list-style:none;display:flex;align-items:center;gap:10px}
+details summary::-webkit-details-marker{display:none}
+details summary .chev{margin-left:auto;transition:transform .2s;color:var(--muted)}
+details[open] summary .chev{transform:rotate(180deg)}
+.rules{font-size:.88rem;color:var(--muted);margin-top:12px}
+.rules ul{padding-left:18px;margin:0 0 14px}
+.rules li{margin:4px 0}
+.rules b{color:var(--ink)}
+
+/* ---------- Mobile bar ---------- */
+.mbar{display:none}
+@media (max-width:920px){
+  .wrap{padding-bottom:110px}
+  .mbar{
+    display:flex;position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:20;
+    align-items:center;gap:12px;padding:10px 10px 10px 14px;border-radius:16px;
+    background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border:1px solid var(--line-2);box-shadow:0 10px 30px rgba(0,0,0,.25);
+  }
+  .mbar .m{min-width:0}
+  .mbar small{display:block;font-size:.65rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .mbar b{display:block;font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mbar .m.xp b{color:var(--accent)}
+  .mbar .btn{margin-left:auto;flex:none;min-height:40px;padding:8px 12px}
+}
+
+footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px}
+
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translate(-50%,10px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:30}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (min-width:921px){.toast{bottom:24px}}
 .hidden{display:none !important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion: reduce){*{transition:none !important}}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path fill="currentColor" d="M13.5 2 4 14h6.5L9 22l11-13h-6.8z"/></symbol>
+  <symbol id="i-scroll" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 21h10a2 2 0 0 0 2-2v-1H10v1a2 2 0 1 1-4 0V5a2 2 0 0 0-2-2h12a2 2 0 0 1 2 2v13M4 3a2 2 0 0 0-2 2v2h4M10 8h6M10 12h6"/></symbol>
+  <symbol id="i-sword" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2"/></symbol>
+  <symbol id="i-chest" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 10V8a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2M3 10h18v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM12 10v4M10 14h4"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 9h11v11H9zM5 15H4V4h11v1"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+</svg>
+
 <div class="wrap">
-  <header>
-    <h1>Calculadora de Encontros<small>Guilda Tempest · Tormenta 20</small></h1>
-    <div class="row-actions" style="margin:0">
-      <button class="btn" id="btn-link" type="button">Copiar link</button>
-      <button class="btn" id="btn-reset" type="button">Limpar</button>
-      <button class="btn" id="btn-theme" type="button" aria-label="Alternar tema">◐</button>
+  <header class="hero">
+    <svg class="hero-bolt" viewBox="0 0 24 24"><use href="#i-bolt"/></svg>
+    <div class="hero-inner">
+      <div class="brand">
+        <div class="brand-mark"><svg width="24" height="24"><use href="#i-bolt"/></svg></div>
+        <div>
+          <h1>Guilda Tempest</h1>
+          <p>Calculadora de Encontros · <span style="white-space:nowrap">Tormenta 20</span></p>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <button class="hbtn" id="btn-link" type="button"><svg><use href="#i-link"/></svg>Copiar link</button>
+        <button class="hbtn" id="btn-reset" type="button"><svg><use href="#i-reset"/></svg>Limpar</button>
+        <button class="hbtn" id="btn-theme" type="button" aria-label="Alternar tema claro/escuro"><svg><use href="#i-moon"/></svg></button>
+      </div>
     </div>
   </header>
 
   <div class="grid">
     <main>
       <section class="card">
-        <h2>Missão</h2>
+        <div class="card-head">
+          <h2 class="card-title"><span class="ico"><svg><use href="#i-scroll"/></svg></span>Missão</h2>
+          <span class="step">Passo 1</span>
+        </div>
+        <span class="lbl" id="dif-lbl">Dificuldade</span>
+        <div class="diff" id="m-dif" role="radiogroup" aria-labelledby="dif-lbl"></div>
         <div class="fields">
-          <div>
-            <label for="m-dif">Dificuldade</label>
-            <select id="m-dif"></select>
-          </div>
           <div id="f-nd">
             <label for="m-nd">ND da missão</label>
             <select id="m-nd"></select>
@@ -121,72 +347,89 @@ details .rules ul{padding-left:18px}
           </div>
           <div>
             <label for="m-ts">T$ base (opcional)</label>
-            <input id="m-ts" type="number" min="0" step="1" placeholder="da tabela">
+            <input id="m-ts" type="number" min="0" step="1" inputmode="numeric" placeholder="da tabela">
           </div>
         </div>
-        <p class="note" id="m-note"></p>
+        <div class="target" id="m-target"></div>
       </section>
 
-      <section class="card">
-        <h2>Postagem</h2>
-        <div class="fields">
-          <div><label for="p-local">📍 Local</label><input id="p-local" type="text" data-p="local" placeholder="ex.: Rishantor, O Palácio dos Palácios (Ahlen)"></div>
-          <div><label for="p-objetivo">🎯 Objetivo</label><input id="p-objetivo" type="text" data-p="objetivo" placeholder="???"></div>
-          <div><label for="p-contratante">🛂 Contratante</label><input id="p-contratante" type="text" data-p="contratante"></div>
-          <div><label for="p-data">⌚ Data e Horário</label><input id="p-data" type="text" data-p="data" placeholder="16/10 - 18h"></div>
-          <div><label for="p-vagas">Vagas</label><input id="p-vagas" type="number" min="1" step="1" data-p="vagas"></div>
-          <div><label for="p-diflabel">Nome da dificuldade (opcional)</label><input id="p-diflabel" type="text" data-p="difLabel" placeholder="usa o nome padrão"></div>
-        </div>
-        <div style="margin-top:12px"><label for="p-resumo">📝 Resumo</label><textarea id="p-resumo" data-p="resumo" rows="4"></textarea></div>
-        <div style="margin-top:12px"><label for="p-regras">Regras utilizadas (uma por linha)</label><textarea id="p-regras" data-p="regras" rows="3"></textarea></div>
-        <div style="margin-top:12px"><label for="p-saida">Texto gerado</label><textarea id="p-saida" rows="14" readonly></textarea></div>
-        <div class="row-actions">
-          <button class="btn primary" id="btn-post" type="button">Copiar postagem</button>
-        </div>
-      </section>
-
+      <div class="card-head" style="margin:4px 2px 12px">
+        <h2 class="card-title"><span class="ico"><svg><use href="#i-sword"/></svg></span>Encontros</h2>
+        <span class="step">Passo 2</span>
+      </div>
       <div id="encounters"></div>
-      <button class="btn primary" id="btn-add-enc" type="button">+ Adicionar encontro</button>
-
-      <section class="card" style="margin-top:16px">
-        <details>
-          <summary>Regras usadas no cálculo</summary>
-          <div class="rules">
-            <ul>
-              <li><b>Criaturas de ND igual</b> contam como uma só. ND &lt; 1: some os NDs. ND ≥ 1: +2 no ND cada vez que a quantidade dobra (1→ND, 2→+2, 4→+4, 8→+6…).</li>
-              <li><b>Sobras</b> (ex.: 3 criaturas = 2 + 1): por padrão, a criatura que sobra vira um grupo próprio e entra na etapa seguinte. Dá para trocar para “ignorar sobras” abaixo.</li>
-              <li><b>Criaturas de ND diferente:</b> maior ND, +1 para cada uma 1 ND abaixo, +0,5 para 2 abaixo, +0,25 para 3 abaixo; 4 ou mais abaixo não contam. Diferenças fracionadas são arredondadas para cima (ex.: 1,5 abaixo conta como 2 abaixo).</li>
-              <li>Se depois de juntar os grupos aparecerem NDs iguais de novo, eles são juntados outra vez antes de somar os diferentes.</li>
-              <li><b>Chefe Final:</b> +2 de ND só para a dificuldade (o XP usa o ND real).</li>
-              <li>Resultado final sempre arredondado para baixo.</li>
-              <li>Só <b>criaturas</b> entram no ND do encontro. Armadilhas e perigos complexos entram só no XP.</li>
-              <li><b>XP de cada ameaça</b> = 1000 × ND (ND 1/2 = 500).</li>
-              <li><b>Sucesso:</b> 1000 × ND da missão + % da dificuldade sobre o XP de todas as ameaças. T$ da tabela “Dinheiro Médio por cena” e 0,5 PeA.</li>
-              <li><b>Falha:</b> 500 × ND da missão + 20% do XP de cada ameaça enfrentada (mesmo não derrotada).</li>
-              <li><b>Sem ND:</b> 1/3 do XP do nível (nível × 1000) e 1/3 da recompensa média do nível.</li>
-            </ul>
-            <label for="o-sobras" style="margin-top:8px">Sobras ao dobrar</label>
-            <select id="o-sobras" style="max-width:320px">
-              <option value="decompor">Contar a sobra como grupo separado</option>
-              <option value="ignorar">Ignorar sobras</option>
-            </select>
-          </div>
-        </details>
-      </section>
+      <button class="btn add-enc" id="btn-add-enc" type="button"><svg><use href="#i-plus"/></svg>Adicionar encontro</button>
     </main>
 
-    <aside class="sticky">
+    <aside class="sticky" id="rewards">
       <section class="card">
-        <h2>Recompensas por personagem</h2>
-        <div id="summary"></div>
-        <div class="row-actions">
-          <button class="btn primary" id="btn-copy" type="button">Copiar resumo</button>
+        <div class="card-head">
+          <h2 class="card-title"><span class="ico"><svg><use href="#i-chest"/></svg></span>Recompensas</h2>
+          <span class="step">por personagem</span>
         </div>
+        <div id="summary"></div>
+        <button class="btn block" id="btn-copy" type="button" style="margin-top:14px"><svg><use href="#i-copy"/></svg>Copiar resumo do cálculo</button>
       </section>
     </aside>
   </div>
+
+  <section class="card" id="post">
+    <div class="card-head">
+      <h2 class="card-title"><span class="ico"><svg><use href="#i-msg"/></svg></span>Postagem</h2>
+      <span class="step">Passo 3</span>
+    </div>
+    <div class="post-grid">
+      <div>
+        <div class="fields">
+          <div class="field-wide"><label for="p-local">📍 Local</label><input id="p-local" type="text" data-p="local" placeholder="Rishantor, O Palácio dos Palácios (Ahlen)"></div>
+          <div><label for="p-objetivo">🎯 Objetivo</label><input id="p-objetivo" type="text" data-p="objetivo" placeholder="???"></div>
+          <div><label for="p-contratante">🛂 Contratante</label><input id="p-contratante" type="text" data-p="contratante" placeholder="Rei Nonato Vorlat"></div>
+          <div><label for="p-data">⌚ Data e Horário</label><input id="p-data" type="text" data-p="data" placeholder="16/10 - 18h"></div>
+          <div><label for="p-vagas">Vagas</label><input id="p-vagas" type="number" min="1" step="1" inputmode="numeric" data-p="vagas"></div>
+          <div class="field-wide"><label for="p-diflabel">Nome da dificuldade (opcional)</label><input id="p-diflabel" type="text" data-p="difLabel" placeholder="Usa o nome padrão da dificuldade"></div>
+          <div class="field-wide"><label for="p-resumo">📝 Resumo</label><textarea id="p-resumo" data-p="resumo" rows="4"></textarea></div>
+          <div class="field-wide"><label for="p-regras">Regras utilizadas (uma por linha)</label><textarea id="p-regras" data-p="regras" rows="3"></textarea></div>
+        </div>
+      </div>
+      <div>
+        <div class="preview-head"><span class="dot"></span><span class="lbl" style="margin:0">Prévia da postagem</span></div>
+        <pre class="preview" id="p-saida"></pre>
+        <button class="btn primary block" id="btn-post" type="button" style="margin-top:12px"><svg><use href="#i-copy"/></svg>Copiar postagem</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary><span class="card-title"><span class="ico"><svg><use href="#i-book"/></svg></span>Regras usadas no cálculo</span><svg class="chev" width="18" height="18"><use href="#i-chev"/></svg></summary>
+      <div class="rules">
+        <ul>
+          <li><b>Criaturas de ND igual</b> contam como uma só. ND &lt; 1: some os NDs. ND ≥ 1: +2 no ND cada vez que a quantidade dobra (1→ND, 2→+2, 4→+4, 8→+6…).</li>
+          <li><b>Sobras</b> (ex.: 3 criaturas = 2 + 1): por padrão, a que sobra vira um grupo próprio e entra na etapa seguinte. Dá para trocar abaixo.</li>
+          <li><b>Criaturas de ND diferente:</b> maior ND, +1 para cada uma 1 ND abaixo, +0,5 para 2 abaixo, +0,25 para 3 abaixo; 4 ou mais abaixo não contam. Diferenças fracionadas arredondam para cima.</li>
+          <li>Se depois de juntar os grupos aparecerem NDs iguais de novo, eles são juntados outra vez.</li>
+          <li><b>Chefe Final:</b> +2 de ND só para a dificuldade (o XP usa o ND real).</li>
+          <li>Resultado final sempre arredondado para baixo.</li>
+          <li>Só <b>criaturas</b> entram no ND do encontro. Armadilhas e perigos complexos entram só no XP.</li>
+          <li><b>XP de cada ameaça</b> = 1000 × ND (ND 1/2 = 500).</li>
+          <li><b>Sucesso:</b> 1000 × ND da missão + % da dificuldade sobre o XP das ameaças. T$ da tabela “Dinheiro Médio por cena” e 0,5 PeA.</li>
+          <li><b>Falha:</b> 500 × ND da missão + 20% do XP de cada ameaça enfrentada.</li>
+          <li><b>Sem ND:</b> 1/3 do XP do nível (nível × 1000) e 1/3 da recompensa média do nível.</li>
+        </ul>
+        <label for="o-sobras">Sobras ao dobrar</label>
+        <select id="o-sobras" style="max-width:340px">
+          <option value="decompor">Contar a sobra como grupo separado</option>
+          <option value="ignorar">Ignorar sobras</option>
+        </select>
+      </div>
+    </details>
+  </section>
+
+  <footer>Guilda Tempest · os dados ficam salvos só no seu navegador</footer>
 </div>
-<div class="toast" id="toast"></div>
+
+<div class="mbar" id="mbar" aria-live="polite"></div>
+<div class="toast" id="toast" role="status"></div>
 
 <script>
 /* ===== Tabela "Dinheiro Médio por cena" =====
@@ -198,11 +441,11 @@ const DINHEIRO_MEDIO = {
 };
 
 const DIFICULDADES = {
-  normal:   { nome: 'Normal',       offset: 0, pct: 0.40 },
-  dificil:  { nome: 'Difícil +1',   offset: 1, pct: 0.50 },
-  valkaria: { nome: 'Valkaria +2',  offset: 2, pct: 0.60 },
-  tormenta: { nome: 'Tormenta +3',  offset: 3, pct: 0.70 },
-  semnd:    { nome: 'Sem ND (?)',   offset: null, pct: 0 },
+  normal:   { nome: 'Normal',      curto: 'Normal',   desc: 'ND +0 · 40%', offset: 0, pct: 0.40 },
+  dificil:  { nome: 'Difícil +1',  curto: 'Difícil',  desc: 'ND +1 · 50%', offset: 1, pct: 0.50 },
+  valkaria: { nome: 'Valkaria +2', curto: 'Valkaria', desc: 'ND +2 · 60%', offset: 2, pct: 0.60 },
+  tormenta: { nome: 'Tormenta +3', curto: 'Tormenta', desc: 'ND +3 · 70%', offset: 3, pct: 0.70 },
+  semnd:    { nome: 'Sem ND (?)',  curto: 'Sem ND',   desc: 'só interpretação', offset: null, pct: 0 },
 };
 const PCT_FALHA = 0.20;
 const TIPOS = { criatura: 'Criatura', armadilha: 'Armadilha', perigo: 'Perigo complexo' };
@@ -224,6 +467,7 @@ const ndValue = v => { const n = parseFloat(v); return isFinite(n) && n > 0 ? n 
 function ndOptionsHTML(sel) {
   return ND_OPCOES.map(n => `<option value="${r4(n)}"${r4(n) === r4(sel) ? ' selected' : ''}>${fmtND(n)}</option>`).join('');
 }
+const icon = id => `<svg><use href="#${id}"/></svg>`;
 
 /* ===== Cálculo de ND do encontro ===== */
 // Junta `qtd` criaturas de mesmo ND. Retorna lista de valores resultantes + notas explicativas.
@@ -333,7 +577,11 @@ const linkEstado = () => location.href.split('#')[0] + '#' + btoa(unescape(encod
 const $ = s => document.querySelector(s);
 
 function montarMissao() {
-  $('#m-dif').innerHTML = Object.entries(DIFICULDADES).map(([k, d]) => `<option value="${k}"${k === S.dif ? ' selected' : ''}>${d.nome}</option>`).join('');
+  $('#m-dif').innerHTML = Object.entries(DIFICULDADES).map(([k, d]) => `
+    <div class="opt">
+      <input type="radio" name="dif" id="dif-${k}" value="${k}"${k === S.dif ? ' checked' : ''}>
+      <label for="dif-${k}" style="--dc:var(--d-${k})"><b>${d.curto}</b><span>${d.desc}</span></label>
+    </div>`).join('');
   $('#m-nd').innerHTML = ndOptionsHTML(S.nd);
   $('#m-nivel').innerHTML = Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}"${i + 1 === +S.nivel ? ' selected' : ''}>${i + 1}</option>`).join('');
   $('#m-ts').value = S.ts;
@@ -344,27 +592,38 @@ function montarMissao() {
 function montarEncontros() {
   const box = $('#encounters');
   box.innerHTML = S.encontros.map((e, ei) => `
-    <section class="card" data-ei="${ei}">
-      <div class="enc-head">
+    <section class="card enc" data-ei="${ei}">
+      <div class="enc-top">
+        <span class="enc-num">${ei + 1}</span>
         <input type="text" data-f="enc-nome" value="${esc(e.nome)}" aria-label="Nome do encontro">
-        <button class="btn ghost" type="button" data-act="del-enc" title="Remover encontro">✕</button>
+        <button class="icon-btn" type="button" data-act="del-enc" title="Remover encontro" aria-label="Remover encontro">${icon('i-x')}</button>
       </div>
-      <div class="thead"><span>Tipo</span><span>Nome</span><span>ND</span><span>Qtd</span><span>Chefe</span><span></span></div>
-      ${e.ameacas.map((a, ai) => `
-        <div class="threat" data-ai="${ai}">
-          <div><label class="lbl-m">Tipo</label><select data-f="tipo">${Object.entries(TIPOS).map(([k, t]) => `<option value="${k}"${k === a.tipo ? ' selected' : ''}>${t}</option>`).join('')}</select></div>
-          <div class="name"><label class="lbl-m">Nome</label><input type="text" data-f="nome" value="${esc(a.nome)}" placeholder="ex.: Goblin"></div>
-          <div><label class="lbl-m">ND</label><select data-f="nd">${ndOptionsHTML(a.nd)}</select></div>
-          <div><label class="lbl-m">Qtd</label><input type="number" min="0" step="1" data-f="qtd" value="${a.qtd}"></div>
-          <div><label class="chk${a.tipo !== 'criatura' ? ' hidden' : ''}"><input type="checkbox" data-f="chefe"${a.chefe ? ' checked' : ''}> Chefe</label></div>
-          <div class="del"><button class="btn ghost" type="button" data-act="del-ameaca" title="Remover">✕</button></div>
-        </div>`).join('')}
-      <div class="row-actions">
-        <button class="btn" type="button" data-act="add-ameaca" data-tipo="criatura">+ Criatura</button>
-        <button class="btn" type="button" data-act="add-ameaca" data-tipo="armadilha">+ Armadilha</button>
-        <button class="btn" type="button" data-act="add-ameaca" data-tipo="perigo">+ Perigo complexo</button>
+      <div class="enc-body">
+        ${e.ameacas.length ? '<div class="thead"><span>Tipo</span><span>Nome</span><span>ND</span><span>Qtd</span><span>Chefe</span><span></span></div>' : ''}
+        ${e.ameacas.map((a, ai) => `
+          <div class="threat" data-ai="${ai}" data-tipo="${a.tipo}">
+            <div class="t-tipo"><span class="lbl">Tipo</span><select data-f="tipo" aria-label="Tipo">${Object.entries(TIPOS).map(([k, t]) => `<option value="${k}"${k === a.tipo ? ' selected' : ''}>${t}</option>`).join('')}</select></div>
+            <div class="t-nome"><span class="lbl">Nome</span><input type="text" data-f="nome" value="${esc(a.nome)}" placeholder="${a.tipo === 'criatura' ? 'ex.: Goblin' : a.tipo === 'armadilha' ? 'ex.: Fosso' : 'ex.: Ponte ruindo'}" aria-label="Nome"></div>
+            <div class="t-nd"><span class="lbl">ND</span><select data-f="nd" aria-label="ND">${ndOptionsHTML(a.nd)}</select></div>
+            <div class="t-qtd"><span class="lbl">Quantidade</span>
+              <div class="stepper">
+                <button type="button" data-act="menos" aria-label="Diminuir">−</button>
+                <input type="number" min="0" step="1" inputmode="numeric" data-f="qtd" value="${a.qtd}" aria-label="Quantidade">
+                <button type="button" data-act="mais" aria-label="Aumentar">+</button>
+              </div>
+            </div>
+            <div class="t-chefe">${a.tipo === 'criatura'
+              ? `<label class="switch"><input type="checkbox" data-f="chefe"${a.chefe ? ' checked' : ''}><span class="track"></span><span class="txt">Chefe</span></label>`
+              : '<span class="na">—</span>'}</div>
+            <div class="t-del"><button class="icon-btn" type="button" data-act="del-ameaca" title="Remover" aria-label="Remover ameaça">${icon('i-x')}</button></div>
+          </div>`).join('')}
+        <div class="add-row">
+          <button class="btn" type="button" data-act="add-ameaca" data-tipo="criatura" style="--tc:var(--c-criatura)"><span class="dot"></span>Criatura</button>
+          <button class="btn" type="button" data-act="add-ameaca" data-tipo="armadilha" style="--tc:var(--c-armadilha)"><span class="dot"></span>Armadilha</button>
+          <button class="btn" type="button" data-act="add-ameaca" data-tipo="perigo" style="--tc:var(--c-perigo)"><span class="dot"></span>Perigo complexo</button>
+        </div>
+        <div class="result" data-res="${ei}"></div>
       </div>
-      <div class="result" data-res="${ei}"></div>
     </section>`).join('');
   atualizar();
 }
@@ -380,9 +639,9 @@ function atualizar() {
 
   $('#f-nd').classList.toggle('hidden', semND);
   $('#f-nivel').classList.toggle('hidden', !semND);
-  $('#m-note').textContent = semND
-    ? 'Missão sem ND: não tem dificuldade. Recompensa = 1/3 do XP do nível e 1/3 da recompensa média do nível.'
-    : `Encontros devem ter ND ${fmtND(alvo)} (ND ${fmtND(S.nd)}${dif.offset ? ' +' + dif.offset : ''}). XP das ameaças: ${dif.pct * 100}%.`;
+  $('#m-target').innerHTML = semND
+    ? `<span class="tnd">?</span><span>Missão sem ND: sem dificuldade. Recompensa = 1/3 do XP do nível e 1/3 da recompensa média do nível.</span>`
+    : `<span class="tnd">ND ${fmtND(alvo)}</span><span>é o ND que os encontros devem ter (missão ND ${fmtND(S.nd)}${dif.offset ? ' +' + dif.offset : ''}). XP das ameaças: <b>${dif.pct * 100}%</b>.</span>`;
   const tsTabela = DINHEIRO_MEDIO[semND ? S.nivel : S.nd];
   $('#m-ts').placeholder = tsTabela != null ? `tabela: ${fmtNum(tsTabela)}` : 'preencher';
 
@@ -393,30 +652,39 @@ function atualizar() {
     const criaturas = e.ameacas.filter(a => a.tipo === 'criatura');
     const r = calcularND(criaturas, S.sobras);
     const xp = xpAmeacas(e);
-    let pill = '';
+    let pill = '', cls = '';
     if (r && alvo != null) {
-      if (r4(r.nd) === alvo) pill = `<span class="pill ok">No alvo (ND ${fmtND(alvo)})</span>`;
-      else if (r.nd < alvo) pill = `<span class="pill warn">Abaixo do alvo (ND ${fmtND(alvo)})</span>`;
-      else pill = `<span class="pill bad">Acima do alvo (ND ${fmtND(alvo)})</span>`;
+      if (r4(r.nd) === alvo) { cls = 'ok'; pill = `<span class="pill ok">No alvo · ND ${fmtND(alvo)}</span>`; }
+      else if (r.nd < alvo) { cls = 'warn'; pill = `<span class="pill warn">Abaixo do alvo · ND ${fmtND(alvo)}</span>`; }
+      else { cls = 'bad'; pill = `<span class="pill bad">Acima do alvo · ND ${fmtND(alvo)}</span>`; }
     }
-    el.innerHTML = r
-      ? `<div class="big"><span class="nd">ND ${fmtND(r.nd)}</span>${pill}</div>
-         <ol class="steps">${r.passos.map(p => `<li>${esc(p)}</li>`).join('')}</ol>
-         <p class="note">XP das ameaças deste encontro: ${fmtNum(xp)}</p>`
-      : `<div class="big"><span class="nd">—</span></div><p class="note">Sem criaturas neste encontro.${xp ? ' XP das ameaças: ' + fmtNum(xp) : ''}</p>`;
+    el.className = 'result ' + cls;
+    el.innerHTML = `
+      <div class="nd-badge"><div><small>ND</small><b>${r ? fmtND(r.nd) : '—'}</b></div></div>
+      <div>
+        ${r ? pill : '<span class="pill">Sem criaturas</span>'}
+        ${r && r.passos.length ? `<ol class="steps">${r.passos.map(p => `<li>${esc(p)}</li>`).join('')}</ol>` : ''}
+        <div class="meta">XP das ameaças deste encontro: <b>${fmtNum(xp)}</b></div>
+      </div>`;
   });
 
   // Resumo
   const ts = S.ts !== '' && S.ts != null ? +S.ts : tsTabela;
-  const tsTxt = ts != null && isFinite(ts) ? `T$ ${fmtNum(semND ? ts / 3 : ts)}` : '— (preencha T$ base)';
-  let html = '';
+  const temTs = ts != null && isFinite(ts);
+  const tsVal = temTs ? `T$ ${fmtNum(semND ? ts / 3 : ts)}` : '—';
+  let html = '', mbar = '';
   if (semND) {
     const xpNivel = S.nivel * 1000;
     html = `
+      <div class="reward-hero">
+        <div class="stat xp"><small>XP</small><b>${fmtNum(xpNivel / 3)}</b></div>
+        <div class="stat"><small>Tesouro</small><b>${tsVal}</b></div>
+      </div>
       <div class="kv"><span>Nível</span><strong>${S.nivel}</strong></div>
-      <div class="kv"><span>XP (1/3 de ${fmtNum(xpNivel)})</span><strong class="total">${fmtNum(xpNivel / 3)} XP</strong></div>
-      <div class="kv"><span>Tesouro (1/3)</span><strong>${tsTxt}</strong></div>
+      <div class="kv"><span>XP (1/3 de ${fmtNum(xpNivel)})</span><strong>${fmtNum(xpNivel / 3)}</strong></div>
+      <div class="kv"><span>Tesouro (1/3)</span><strong>${temTs ? tsVal : 'preencha T$ base'}</strong></div>
       <div class="kv"><span>PeA</span><strong>0,5</strong></div>`;
+    mbar = `<div class="m"><small>Missão</small><b>Sem ND</b></div><div class="m xp"><small>XP</small><b>${fmtNum(xpNivel / 3)}</b></div>`;
   } else {
     const totalAmeacas = S.encontros.reduce((s, e) => s + xpAmeacas(e), 0);
     const base = 1000 * S.nd;
@@ -424,22 +692,28 @@ function atualizar() {
     const baseFalha = 500 * S.nd;
     const extraFalha = totalAmeacas * PCT_FALHA;
     html = `
-      <div class="kv"><span>ND da missão</span><strong>${fmtND(S.nd)} · ${dif.nome}</strong></div>
+      <div class="reward-hero">
+        <div class="stat xp"><small>XP (sucesso)</small><b>${fmtNum(base + extra)}</b></div>
+        <div class="stat"><small>Tesouro</small><b>${tsVal}</b></div>
+      </div>
+      <div class="kv"><span>Missão</span><strong>ND ${fmtND(S.nd)} · ${dif.nome}</strong></div>
       <div class="kv"><span>ND dos encontros</span><strong>${fmtND(alvo)}</strong></div>
       <div class="kv"><span>XP total das ameaças</span><strong>${fmtNum(totalAmeacas)}</strong></div>
-      <div class="section-title">Sucesso</div>
-      <div class="kv"><span>XP base (1000 × ${fmtND(S.nd)})</span><strong>${fmtNum(base)}</strong></div>
+      <div class="section-title ok">Sucesso</div>
+      <div class="kv"><span>Base (1000 × ${fmtND(S.nd)})</span><strong>${fmtNum(base)}</strong></div>
       <div class="kv"><span>Ameaças (${dif.pct * 100}%)</span><strong>${fmtNum(extra)}</strong></div>
-      <div class="kv"><span>XP</span><strong class="total">${fmtNum(base + extra)} XP</strong></div>
-      <div class="kv"><span>Tesouro</span><strong>${tsTxt}</strong></div>
+      <div class="kv total"><span>XP</span><strong>${fmtNum(base + extra)}</strong></div>
+      <div class="kv"><span>Tesouro</span><strong>${temTs ? tsVal : 'preencha T$ base'}</strong></div>
       <div class="kv"><span>PeA</span><strong>0,5</strong></div>
-      <div class="section-title">Falha</div>
-      <div class="kv"><span>XP base (500 × ${fmtND(S.nd)})</span><strong>${fmtNum(baseFalha)}</strong></div>
+      <div class="section-title bad">Falha</div>
+      <div class="kv"><span>Base (500 × ${fmtND(S.nd)})</span><strong>${fmtNum(baseFalha)}</strong></div>
       <div class="kv"><span>Ameaças enfrentadas (20%)</span><strong>${fmtNum(extraFalha)}</strong></div>
-      <div class="kv"><span>XP</span><strong class="total">${fmtNum(baseFalha + extraFalha)} XP</strong></div>`;
+      <div class="kv total"><span>XP</span><strong>${fmtNum(baseFalha + extraFalha)}</strong></div>`;
+    mbar = `<div class="m"><small>Alvo</small><b>ND ${fmtND(alvo)}</b></div><div class="m xp"><small>XP</small><b>${fmtNum(base + extra)}</b></div><div class="m"><small>Gold</small><b>${temTs ? fmtNum(ts) : '—'}</b></div>`;
   }
   $('#summary').innerHTML = html + '<p class="note">Personagens que morrem sem expectativa de reviver não entram no cálculo do grupo.</p>';
-  $('#p-saida').value = postagemTexto();
+  $('#mbar').innerHTML = mbar + `<button class="btn primary" type="button" data-go="rewards">Detalhes</button>`;
+  $('#p-saida').textContent = postagemTexto();
   salvar();
 }
 
@@ -514,7 +788,7 @@ async function copiar(txt, msg) {
 }
 
 /* ===== Eventos ===== */
-$('#m-dif').addEventListener('change', e => { S.dif = e.target.value; atualizar(); });
+$('#m-dif').addEventListener('change', e => { if (e.target.name === 'dif') { S.dif = e.target.value; atualizar(); } });
 $('#m-nd').addEventListener('change', e => { S.nd = ndValue(e.target.value); atualizar(); });
 $('#m-nivel').addEventListener('change', e => { S.nivel = +e.target.value; atualizar(); });
 $('#m-ts').addEventListener('input', e => { S.ts = e.target.value; atualizar(); });
@@ -522,13 +796,9 @@ $('#o-sobras').addEventListener('change', e => { S.sobras = e.target.value; atua
 $('#btn-add-enc').addEventListener('click', () => { S.encontros.push(novoEncontro(S.encontros.length + 1)); montarEncontros(); });
 $('#btn-copy').addEventListener('click', () => copiar(resumoTexto(), 'Resumo copiado'));
 $('#btn-post').addEventListener('click', () => copiar(postagemTexto(), 'Postagem copiada'));
-document.querySelectorAll('[data-p]').forEach(el => el.addEventListener('input', () => {
-  S.post[el.dataset.p] = el.type === 'number' ? (parseInt(el.value, 10) || '') : el.value;
-  atualizar();
-}));
 $('#btn-link').addEventListener('click', () => copiar(linkEstado(), 'Link copiado'));
 $('#btn-reset').addEventListener('click', () => {
-  if (!confirm('Limpar todos os encontros?')) return;
+  if (!confirm('Limpar todos os encontros e a postagem?')) return;
   S = estadoPadrao(); history.replaceState(null, '', location.pathname + location.search);
   montarMissao(); montarEncontros();
 });
@@ -539,11 +809,19 @@ $('#btn-theme').addEventListener('click', () => {
   try { localStorage.setItem('tempest-tema', root.dataset.theme); } catch (e) {}
 });
 try { const t = localStorage.getItem('tempest-tema'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+$('#mbar').addEventListener('click', e => {
+  const b = e.target.closest('[data-go]');
+  if (b) document.getElementById(b.dataset.go).scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+document.querySelectorAll('[data-p]').forEach(el => el.addEventListener('input', () => {
+  S.post[el.dataset.p] = el.type === 'number' ? (parseInt(el.value, 10) || '') : el.value;
+  atualizar();
+}));
 
 const box = $('#encounters');
 function alvoDe(el) {
   const enc = el.closest('[data-ei]'); const th = el.closest('[data-ai]');
-  return { e: enc && S.encontros[+enc.dataset.ei], ei: enc && +enc.dataset.ei, a: th && S.encontros[+enc.dataset.ei].ameacas[+th.dataset.ai], ai: th && +th.dataset.ai };
+  return { e: enc && S.encontros[+enc.dataset.ei], ei: enc && +enc.dataset.ei, a: th && S.encontros[+enc.dataset.ei].ameacas[+th.dataset.ai], ai: th && +th.dataset.ai, th };
 }
 box.addEventListener('input', ev => {
   const f = ev.target.dataset.f; if (!f) return;
@@ -565,10 +843,17 @@ box.addEventListener('change', ev => {
 });
 box.addEventListener('click', ev => {
   const btn = ev.target.closest('[data-act]'); if (!btn) return;
-  const { e, ei, ai } = alvoDe(btn);
-  if (btn.dataset.act === 'add-ameaca') e.ameacas.push(novaAmeaca(btn.dataset.tipo));
-  else if (btn.dataset.act === 'del-ameaca') e.ameacas.splice(ai, 1);
-  else if (btn.dataset.act === 'del-enc') S.encontros.splice(ei, 1);
+  const { e, ei, a, ai, th } = alvoDe(btn);
+  const act = btn.dataset.act;
+  if (act === 'mais' || act === 'menos') {
+    a.qtd = Math.max(0, a.qtd + (act === 'mais' ? 1 : -1));
+    th.querySelector('[data-f="qtd"]').value = a.qtd;
+    atualizar();
+    return;
+  }
+  if (act === 'add-ameaca') e.ameacas.push(novaAmeaca(btn.dataset.tipo));
+  else if (act === 'del-ameaca') e.ameacas.splice(ai, 1);
+  else if (act === 'del-enc') S.encontros.splice(ei, 1);
   montarEncontros();
 });
 
