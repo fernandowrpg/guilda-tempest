@@ -269,11 +269,19 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 /* ---------- Editor ---------- */
 .editor{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-2);overflow:hidden;transition:border-color .15s,box-shadow .15s}
 .editor:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.editor textarea{border:0 !important;box-shadow:none !important;border-radius:0;background:transparent;display:block}
+.rte{padding:10px 12px;outline:none;line-height:1.5;overflow-wrap:anywhere;max-height:360px;overflow-y:auto;cursor:text}
+.rte.vazio::before{content:attr(data-placeholder);color:var(--muted);opacity:.7;pointer-events:none;position:absolute}
+.rte h1,.rte h2,.rte h3{margin:.15em 0;line-height:1.3}
+.rte h1{font-size:1.4em}.rte h2{font-size:1.2em}.rte h3{font-size:1.05em}
+.rte blockquote{margin:2px 0;padding-left:10px;border-left:4px solid var(--line-2);color:var(--ink)}
+.rte ul,.rte ol{margin:2px 0;padding-left:22px}
+.rte code{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:0 4px;font:.9em ui-monospace,Consolas,monospace}
+.rte .sp{background:var(--ink);color:var(--bg);border-radius:3px;padding:0 2px}
+.tb button.on{background:var(--accent-soft);color:var(--accent)}
 .tb{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:1px;padding:4px;border-bottom:1px solid var(--line);background:var(--panel)}
-.tb button{flex:none;min-width:30px;height:30px;padding:0 6px;border:0;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;font-size:.85rem;line-height:1}
+.tb button{flex:none;min-width:28px;height:30px;padding:0 4px;border:0;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;font-size:.85rem;line-height:1}
 .tb button:hover{background:var(--accent-soft);color:var(--accent)}
-.tb .sep{width:1px;margin:5px 3px;background:var(--line)}
+.tb .sep{width:1px;margin:5px 2px;background:var(--line)}
 
 /* ---------- Rules ---------- */
 details summary{cursor:pointer;font-weight:700;list-style:none;display:flex;align-items:center;gap:10px}
@@ -642,6 +650,7 @@ function montarMissao() {
   $('#m-jog').value = S.jogadores;
   $('#o-sobras').value = S.sobras;
   document.querySelectorAll('[data-p]').forEach(el => { el.value = S.post[el.dataset.p] ?? ''; });
+  if (typeof recarregarEditores === 'function') recarregarEditores();
 }
 
 function montarEncontros() {
@@ -797,6 +806,9 @@ function atualizar() {
   salvar();
 }
 
+// Título, citação e lista só funcionam no Discord no começo da linha
+const campo = (rotulo, v) => /\n|^(#{1,3} |> |- |\d+\. )/.test(v || '') ? `${rotulo}\n${v}` : `${rotulo} ${v || ''}`;
+
 function postagemTexto() {
   const P = S.post;
   const dif = DIFICULDADES[S.dif];
@@ -805,11 +817,11 @@ function postagemTexto() {
   const ts = S.ts !== '' && S.ts != null ? +S.ts : tsTabela;
   const L = [];
   L.push(`📍 Local: ${P.local}`);
-  L.push(`🎯 Objetivo: ${P.objetivo}`);
+  L.push(campo('🎯 Objetivo:', P.objetivo));
   L.push(`🛂 Contratante: ${P.contratante}`);
   L.push(`⌚ Data e Horário: ${P.data}`);
   L.push('');
-  L.push(`📝 Resumo: ${P.resumo}`);
+  L.push(campo('📝 Resumo:', P.resumo));
   L.push('');
   if (semND) {
     L.push('ND: ?');
@@ -829,7 +841,7 @@ function postagemTexto() {
   L.push('');
   L.push('Regras Utilizadas:');
   L.push('');
-  const regras = (P.regras || '').split('\n').map(s => s.trim()).filter(Boolean);
+  const regras = (P.regras || '').split('\n').map(s => s.trim().replace(/^([-*]|\d+\.)\s+/, '')).filter(Boolean);
   if (regras.length) regras.forEach(r => L.push(`* ${r}`));
   else L.push('*');
   return L.join('\n');
@@ -857,9 +869,11 @@ function resumoTexto() {
   return linhas.join('\n');
 }
 
-/* ===== Markdown do Discord: prévia ===== */
+/* ===== Markdown do Discord =====
+   Usado na prévia, ao carregar o editor e ao colar texto. Recebe texto já escapado em HTML. */
 function inlineMd(t) {
-  const codes = [];
+  const lit = [], codes = [];
+  t = t.replace(/\\(&gt;|&amp;|[\\*_~|`#.-])/g, (_, c) => { lit.push(c); return `\u0001${lit.length - 1}\u0001`; });
   t = t.replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return `\u0000${codes.length - 1}\u0000`; });
   t = t
     .replace(/\|\|(.+?)\|\|/g, '<span class="sp" title="Spoiler">$1</span>')
@@ -867,77 +881,209 @@ function inlineMd(t) {
     .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
     .replace(/__(.+?)__/g, '<u>$1</u>')
     .replace(/\*(?!\s)(.+?)\*/g, '<i>$1</i>')
-    .replace(/(^|[^\w])_(.+?)_(?!\w)/g, '$1<i>$2</i>')
+    .replace(/(^|[^\w:])_(?!\s)(.+?)_(?![\w:])/g, '$1<i>$2</i>')
     .replace(/~~(.+?)~~/g, '<s>$1</s>');
-  return t.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[i]}</code>`);
+  return t
+    .replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[i]}</code>`)
+    .replace(/\u0001(\d+)\u0001/g, (_, i) => lit[i]);
 }
+const RE_TITULO = /^(#{1,3}) (.*)$/, RE_CITA = /^&gt; ?(.*)$/, RE_LISTA = /^\s*[-*] (.*)$/;
 function renderDiscord(txt) {
   return esc(txt).split('\n').map(l => {
     let m;
-    if ((m = l.match(/^(#{1,3}) (.*)$/))) return `<div class="ln h${m[1].length}">${inlineMd(m[2])}</div>`;
-    if ((m = l.match(/^&gt; ?(.*)$/))) return `<div class="ln q">${inlineMd(m[1]) || '&nbsp;'}</div>`;
-    if ((m = l.match(/^\s*[-*] (.*)$/))) return `<div class="ln li">${inlineMd(m[1])}</div>`;
+    if ((m = l.match(RE_TITULO))) return `<div class="ln h${m[1].length}">${inlineMd(m[2])}</div>`;
+    if ((m = l.match(RE_CITA))) return `<div class="ln q">${inlineMd(m[1]) || '&nbsp;'}</div>`;
+    if ((m = l.match(RE_LISTA))) return `<div class="ln li">${inlineMd(m[1])}</div>`;
     return `<div class="ln">${inlineMd(l)}</div>`;
   }).join('');
 }
 
-/* ===== Editor (barra de formatação nos textareas) ===== */
-const FERRAMENTAS = [
-  { t: '<b>B</b>', title: 'Negrito (Ctrl+B)', wrap: '**', key: 'b' },
-  { t: '<i>I</i>', title: 'Itálico (Ctrl+I)', wrap: '*', key: 'i' },
-  { t: '<u>U</u>', title: 'Sublinhado (Ctrl+U)', wrap: '__', key: 'u' },
-  { t: '<s>S</s>', title: 'Riscado', wrap: '~~' },
-  { t: '▮▮', title: 'Spoiler', wrap: '||' },
-  { t: '&lt;/&gt;', title: 'Código', wrap: '`' },
-  { sep: true },
-  { t: 'H', title: 'Título', line: '## ' },
-  { t: '❝', title: 'Citação', line: '> ' },
-  { t: '•', title: 'Lista', line: '- ' },
-];
-function aplicarFormato(ta, f) {
-  const { selectionStart: a, selectionEnd: b, value: v } = ta;
-  if (f.wrap) {
-    const w = f.wrap, sel = v.slice(a, b);
-    if (sel.startsWith(w) && sel.endsWith(w) && sel.length >= w.length * 2) {
-      ta.setRangeText(sel.slice(w.length, sel.length - w.length), a, b, 'select');
-    } else if (v.slice(a - w.length, a) === w && v.slice(b, b + w.length) === w) {
-      ta.setRangeText(sel, a - w.length, b + w.length, 'select');
-    } else {
-      ta.setRangeText(w + sel + w, a, b, 'select');
-      ta.setSelectionRange(a + w.length, b + w.length);
+/* ===== Editor visual → markdown do Discord ===== */
+// markdown → HTML do editor
+function mdParaHtml(md) {
+  const out = [];
+  let bloco = null; // { tag, itens }
+  const fecha = () => {
+    if (!bloco) return;
+    out.push(bloco.tag === 'ul'
+      ? `<ul>${bloco.itens.map(i => `<li>${i || '<br>'}</li>`).join('')}</ul>`
+      : `<blockquote>${bloco.itens.map(i => `<div>${i || '<br>'}</div>`).join('')}</blockquote>`);
+    bloco = null;
+  };
+  for (const l of esc(md || '').split('\n')) {
+    let m;
+    if ((m = l.match(RE_CITA)) || (m = l.match(RE_LISTA))) {
+      const tag = RE_CITA.test(l) ? 'blockquote' : 'ul';
+      if (!bloco || bloco.tag !== tag) { fecha(); bloco = { tag, itens: [] }; }
+      bloco.itens.push(inlineMd(m[1]));
+      continue;
     }
-  } else {
-    const ini = v.lastIndexOf('\n', a - 1) + 1;
-    let fim = v.indexOf('\n', b); if (fim < 0) fim = v.length;
-    const linhas = v.slice(ini, fim).split('\n');
-    const todas = linhas.every(l => l.startsWith(f.line));
-    const novo = linhas.map(l => todas ? l.slice(f.line.length) : f.line + l).join('\n');
-    ta.setRangeText(novo, ini, fim, 'select');
+    fecha();
+    if ((m = l.match(RE_TITULO))) out.push(`<h${m[1].length}>${inlineMd(m[2])}</h${m[1].length}>`);
+    else out.push(`<div>${inlineMd(l) || '<br>'}</div>`);
   }
-  ta.focus();
-  ta.dispatchEvent(new Event('input', { bubbles: true }));
+  fecha();
+  return out.join('');
 }
+
+// HTML do editor → markdown do Discord
+const MARCAS = { B: '**', STRONG: '**', I: '*', EM: '*', U: '__', S: '~~', STRIKE: '~~', DEL: '~~' };
+const BLOCOS = new Set(['DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'BLOCKQUOTE', 'UL', 'OL', 'LI']);
+const escMd = t => t.replace(/ /g, ' ').replace(/([\\*`])|(~~)|(\|\|)/g, m => m.split('').map(c => '\\' + c).join(''));
+function mdInline(n) {
+  if (n.nodeType === 3) return escMd(n.nodeValue);
+  if (n.nodeType !== 1) return '';
+  if (n.tagName === 'BR') return '\n';
+  if (n.tagName === 'CODE') return n.textContent ? '`' + n.textContent.replace(/`/g, "'") + '`' : '';
+  const dentro = [...n.childNodes].map(mdInline).join('');
+  const w = n.classList.contains('sp') ? '||' : MARCAS[n.tagName]
+    || (/bold|[6-9]00/.test(n.style.fontWeight) ? '**' : n.style.fontStyle === 'italic' ? '*' : '');
+  if (!w || !dentro.trim()) return dentro;
+  // Discord não aceita espaço logo depois/antes do marcador: move os espaços para fora
+  return dentro.split('\n').map(p => {
+    const m = p.match(/^(\s*)([\s\S]*?)(\s*)$/);
+    return m[2] ? m[1] + w + m[2] + w + m[3] : p;
+  }).join('\n');
+}
+function mdBlocos(raiz) {
+  const linhas = [];
+  let buf = '';
+  const flush = () => {
+    if (!buf) return;
+    // texto comum que começaria um bloco do Discord é escapado
+    linhas.push(...buf.replace(/\n$/, '').split('\n').map(l => l.replace(/^(#{1,3} |> |- )/, '\\$1').replace(/^(\d+)\. /, '$1\\. ')));
+    buf = '';
+  };
+  for (const n of raiz.childNodes) {
+    if (n.nodeType !== 1 || !BLOCOS.has(n.tagName)) { buf += mdInline(n); continue; }
+    flush();
+    const t = n.tagName;
+    if (/^H\d$/.test(t)) linhas.push('#'.repeat(Math.min(3, +t[1])) + ' ' + mdInline(n).replace(/\n/g, ' ').trim());
+    else if (t === 'BLOCKQUOTE') linhas.push(...mdBlocos(n).map(l => '> ' + l));
+    else if (t === 'UL' || t === 'OL') [...n.children].forEach((li, i) => {
+      const [p, ...resto] = mdBlocos(li);
+      linhas.push((t === 'OL' ? `${i + 1}. ` : '- ') + (p || ''), ...resto.map(r => '  ' + r));
+    });
+    else linhas.push(...mdBlocos(n));
+  }
+  flush();
+  return linhas;
+}
+function htmlParaMd(raiz) {
+  return mdBlocos(raiz).join('\n').replace(/\s+$/, '');
+}
+const FERRAMENTAS = [
+  { t: '<b>B</b>', title: 'Negrito (Ctrl+B)', cmd: 'bold' },
+  { t: '<i>I</i>', title: 'Itálico (Ctrl+I)', cmd: 'italic' },
+  { t: '<u>U</u>', title: 'Sublinhado (Ctrl+U)', cmd: 'underline' },
+  { t: '<s>S</s>', title: 'Riscado', cmd: 'strikeThrough' },
+  { t: '▮▮', title: 'Spoiler', tag: 'span', cls: 'sp' },
+  { t: '&lt;/&gt;', title: 'Código', tag: 'code' },
+  { sep: true },
+  { t: 'H', title: 'Título', bloco: 'H2' },
+  { t: '❝', title: 'Citação', bloco: 'BLOCKQUOTE' },
+  { t: '•', title: 'Lista', cmd: 'insertUnorderedList' },
+  { sep: true },
+  { t: '⌫', title: 'Limpar formatação', limpar: true },
+];
+function dentroDe(ed, no, teste) {
+  for (let n = no; n && n !== ed; n = n.parentNode) if (n.nodeType === 1 && teste(n)) return n;
+  return null;
+}
+function desembrulhar(el) {
+  const pai = el.parentNode;
+  while (el.firstChild) pai.insertBefore(el.firstChild, el);
+  pai.removeChild(el);
+}
+function aplicar(ed, f) {
+  ed.focus();
+  const sel = getSelection();
+  if (!sel.rangeCount || !ed.contains(sel.anchorNode)) return;
+  const r = sel.getRangeAt(0);
+  if (f.cmd) {
+    document.execCommand(f.cmd, false, null);
+  } else if (f.tag) {
+    const ja = dentroDe(ed, r.commonAncestorContainer, n => n.tagName === f.tag.toUpperCase() && (!f.cls || n.classList.contains(f.cls)));
+    if (ja) desembrulhar(ja);
+    else if (!r.collapsed) {
+      const el = document.createElement(f.tag);
+      if (f.cls) el.className = f.cls;
+      el.appendChild(r.extractContents());
+      r.insertNode(el);
+      sel.removeAllRanges();
+      const nr = document.createRange(); nr.selectNodeContents(el); sel.addRange(nr);
+    }
+  } else if (f.bloco) {
+    const ja = dentroDe(ed, r.startContainer, n => n.tagName === f.bloco);
+    if (ja && f.bloco === 'BLOCKQUOTE') desembrulhar(ja);
+    else document.execCommand('formatBlock', false, ja ? 'div' : f.bloco.toLowerCase());
+  } else if (f.limpar) {
+    document.execCommand('removeFormat', false, null);
+    [...ed.querySelectorAll('.sp, code')].filter(n => sel.containsNode(n, true)).forEach(desembrulhar);
+  }
+  ed.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+const editores = [];
+document.execCommand('defaultParagraphSeparator', false, 'div');
 document.querySelectorAll('textarea[data-p]').forEach(ta => {
-  const ed = document.createElement('div');
-  ed.className = 'editor';
+  const wrap = document.createElement('div');
+  wrap.className = 'editor';
   const tb = document.createElement('div');
   tb.className = 'tb';
   tb.setAttribute('role', 'toolbar');
   tb.setAttribute('aria-label', 'Formatação');
+  const ed = document.createElement('div');
+  ed.className = 'rte';
+  ed.contentEditable = 'true';
+  ed.setAttribute('role', 'textbox');
+  ed.setAttribute('aria-multiline', 'true');
+  ed.setAttribute('aria-labelledby', ta.id + '-lbl');
+  ed.dataset.placeholder = ta.placeholder || '';
+  ed.style.minHeight = `calc(${ta.rows || 3} * 1.5em + 20px)`;
+  const label = document.querySelector(`label[for="${ta.id}"]`);
+  if (label) { label.id = ta.id + '-lbl'; label.addEventListener('click', () => ed.focus()); }
   FERRAMENTAS.forEach(f => {
     if (f.sep) { tb.insertAdjacentHTML('beforeend', '<span class="sep"></span>'); return; }
     const bt = document.createElement('button');
     bt.type = 'button'; bt.innerHTML = f.t; bt.title = f.title; bt.setAttribute('aria-label', f.title);
+    if (f.cmd) bt.dataset.cmd = f.cmd;
     bt.addEventListener('mousedown', e => e.preventDefault());
-    bt.addEventListener('click', () => aplicarFormato(ta, f));
+    bt.addEventListener('click', () => aplicar(ed, f));
     tb.appendChild(bt);
   });
-  ta.replaceWith(ed);
-  ed.append(tb, ta);
-  ta.addEventListener('keydown', e => {
-    if (!(e.ctrlKey || e.metaKey)) return;
-    const f = FERRAMENTAS.find(x => x.key === e.key.toLowerCase());
-    if (f) { e.preventDefault(); aplicarFormato(ta, f); }
+  ta.hidden = true;
+  ta.replaceWith(wrap);
+  wrap.append(tb, ed, ta);
+
+  const vazio = () => ed.classList.toggle('vazio', !ed.textContent.trim() && !ed.querySelector('li,h1,h2,h3,blockquote'));
+  ed.carregar = () => { ed.innerHTML = mdParaHtml(ta.value); vazio(); };
+  ed.addEventListener('input', () => {
+    ta.value = htmlParaMd(ed);
+    vazio();
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  // Colar: texto puro, interpretando markdown do Discord
+  ed.addEventListener('paste', e => {
+    e.preventDefault();
+    const txt = (e.clipboardData || window.clipboardData).getData('text/plain');
+    const html = txt.includes('\n') ? mdParaHtml(txt) : inlineMd(esc(txt));
+    document.execCommand('insertHTML', false, html);
+  });
+  ed.addEventListener('click', e => { if (e.target.closest('a')) e.preventDefault(); });
+  editores.push(ed);
+});
+function recarregarEditores() { editores.forEach(ed => ed.carregar()); }
+// Destaca os botões ativos conforme a seleção
+document.addEventListener('selectionchange', () => {
+  const sel = getSelection();
+  editores.forEach(ed => {
+    const ativo = sel.rangeCount && ed.contains(sel.anchorNode);
+    ed.parentNode.querySelectorAll('[data-cmd]').forEach(b => {
+      let on = false;
+      try { on = ativo && document.queryCommandState(b.dataset.cmd); } catch (e) {}
+      b.classList.toggle('on', !!on);
+    });
   });
 });
 $('#p-saida').addEventListener('click', e => { const sp = e.target.closest('.sp'); if (sp) sp.classList.toggle('open'); });
