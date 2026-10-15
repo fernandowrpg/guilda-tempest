@@ -339,6 +339,20 @@ body.travada .switch{cursor:not-allowed}
 .mbar .alvo{font-weight:500;color:var(--muted);font-size:.85em}
 .mbar .m.alerta b{color:var(--bad)}
 
+/* ---------- Explicação do cálculo ---------- */
+.calc{margin:10px 0 0;padding:0;list-style:none;counter-reset:passo;font-size:.86rem;color:var(--ink)}
+.calc > li{position:relative;padding:0 0 10px 30px;counter-increment:passo}
+.calc > li::before{content:counter(passo);position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:.72rem}
+.calc > li:not(:last-child)::after{content:"";position:absolute;left:9.5px;top:22px;bottom:2px;width:1px;background:var(--line)}
+.calc-t{display:block;font-weight:700;margin-bottom:3px}
+.calc ul{margin:0;padding-left:16px;color:var(--muted)}
+.calc ul li{margin:2px 0}
+.calc ul b{color:var(--ink)}
+.calc.grande{font-size:.92rem;margin-top:14px}
+.calc.compacto{font-size:.8rem}
+.calc-wrap{margin-top:8px;font-size:.85rem}
+.calc-wrap > summary,.val-passos > summary{font-weight:600;color:var(--accent);cursor:pointer}
+
 /* ---------- Fechamento ---------- */
 .res-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .res-pick input{position:absolute;opacity:0;pointer-events:none}
@@ -499,6 +513,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px}
         <button class="btn add-enc" id="btn-add-enc" type="button"><svg><use href="#i-plus"/></svg>Adicionar encontro</button>
         <button class="btn add-enc" id="btn-imp-enc" type="button"><svg><use href="#i-in"/></svg>Importar encontro</button>
       </div>
+      <section class="card" id="nd-missao"></section>
     </main>
 
     <aside class="sticky" id="rewards">
@@ -636,39 +651,46 @@ const icon = id => `<svg><use href="#${id}"/></svg>`;
 
 /* ===== Cálculo de ND do encontro ===== */
 // Junta `qtd` criaturas de mesmo ND. Retorna lista de valores resultantes + notas explicativas.
+const plural = (n, um, varios) => n === 1 ? um : varios;
+const fmtDec = n => String(r4(n)).replace('.', ',');
+// Junta `qtd` criaturas de mesmo ND. Retorna os valores resultantes e explica cada conta em `notas`.
 function juntarIguais(nd, qtd, sobras, notas) {
   if (qtd <= 1) return [nd];
   if (nd < 1) {
     const v = r4(nd * qtd);
-    notas.push(`${qtd}× ND ${fmtND(nd)} → somados = ND ${fmtND(v)}`);
+    notas.push(`${qtd}× ND ${fmtND(nd)}: soma os NDs → ${fmtND(nd)} × ${qtd} = <b>ND ${fmtND(v)}</b>`);
     return [v];
   }
   let k = 0, p = 1;
-  while (p * 2 <= qtd) { p *= 2; k++; }
+  const seq = [1];
+  while (p * 2 <= qtd) { p *= 2; k++; seq.push(p); }
   const v = nd + 2 * k;
   const resto = qtd - p;
-  notas.push(`${p}× ND ${fmtND(nd)} → ND ${fmtND(v)} (dobrou ${k}×, +${2 * k})`);
+  notas.push(`${p}× ND ${fmtND(nd)}: a quantidade dobrou ${k} ${plural(k, 'vez', 'vezes')} (${seq.join(' → ')}) → ${fmtND(nd)} + ${k} × 2 = <b>ND ${fmtND(v)}</b>`);
   if (resto === 0) return [v];
   if (sobras === 'ignorar') {
-    notas.push(`sobra de ${resto}× ND ${fmtND(nd)} ignorada`);
+    notas.push(`${plural(resto, 'Sobra', 'Sobram')} ${resto}× ND ${fmtND(nd)}, que não completa outra dobra: ${plural(resto, 'ignorada', 'ignoradas')} (opção “ignorar sobras”).`);
     return [v];
   }
-  notas.push(`sobra de ${resto}× ND ${fmtND(nd)} vira grupo separado`);
+  notas.push(`Sobra ${resto}× ND ${fmtND(nd)}, que não completa outra dobra: vira um grupo separado.`);
   return [v, ...juntarIguais(nd, resto, sobras, notas)];
 }
 
+// Calcula o ND de um conjunto de criaturas. `passos` = [{ t: título da etapa, l: [linhas em HTML] }]
 function calcularND(criaturas, sobras) {
   const passos = [];
   const lista = criaturas.filter(c => c.qtd > 0);
   if (!lista.length) return null;
+  const nome = c => esc(c.nome || 'criatura');
 
-  // Etapa 0: chefes +2
+  // Chefe Final: +2
   const chefes = lista.filter(c => c.chefe);
   if (chefes.length) {
-    passos.push('Chefe Final: ' + chefes.map(c => `${c.nome || 'chefe'} ND ${fmtND(c.nd)} → ${fmtND(c.nd + 2)}`).join('; '));
+    passos.push({ t: 'Chefe Final: +2 de ND para calcular a dificuldade',
+      l: chefes.map(c => `${c.qtd}× ${nome(c)}: ND ${fmtND(c.nd)} + 2 = <b>ND ${fmtND(c.nd + 2)}</b>`) });
   }
 
-  // Etapa 1: agrupar por ND efetivo
+  // Agrupa por ND
   const grupos = new Map();
   for (const c of lista) {
     const nd = r4(c.nd + (c.chefe ? 2 : 0));
@@ -681,7 +703,7 @@ function calcularND(criaturas, sobras) {
   for (const [nd, qtd] of [...grupos].sort((a, b) => b[0] - a[0])) {
     if (nd >= 1) continue;
     somaFrac += nd * qtd;
-    fracs.push(`${qtd}× ND ${fmtND(nd)}`);
+    fracs.push(`${qtd} × ${fmtND(nd)}`);
     grupos.delete(nd);
   }
   if (somaFrac > 0) {
@@ -690,16 +712,24 @@ function calcularND(criaturas, sobras) {
     const resto = Math.round((somaFrac - n1) * 1000) / 1000;
     if (n1) grupos.set(1, (grupos.get(1) || 0) + n1);
     if (resto > 0) grupos.set(resto, (grupos.get(resto) || 0) + 1);
-    const vira = [n1 ? `${n1}× ND 1` : '', resto > 0 ? `1× ND ${fmtND(resto)}` : ''].filter(Boolean).join(' + ');
-    passos.push(`ND menor que 1: ${fracs.join(' + ')} = ${fmtND(somaFrac)} → ${vira}`);
+    const l = [`Soma dos NDs: ${fracs.join(' + ')} = <b>${fmtND(somaFrac)}</b>`];
+    if (n1) l.push(`Cada ponto inteiro vira uma criatura de ND 1: <b>${n1}× ND 1</b>`);
+    if (resto > 0) l.push(`O resto vira uma criatura: <b>1× ND ${fmtND(resto)}</b>`);
+    passos.push({ t: 'Criaturas com ND menor que 1 (Ameaças de Arton, p. 9)', l });
   }
 
+  const ordenados = [...grupos].sort((a, b) => b[0] - a[0]);
+  passos.push({ t: 'Separar as criaturas por ND',
+    l: [ordenados.map(([nd, q]) => `<b>${q}× ND ${fmtND(nd)}</b>`).join(' · ')] });
+
+  // Mesmo ND: +2 a cada vez que a quantidade dobra
   let valores = [];
   const notas1 = [];
-  for (const [nd, qtd] of [...grupos].sort((a, b) => b[0] - a[0])) {
-    valores.push(...juntarIguais(nd, qtd, sobras, notas1));
+  for (const [nd, qtd] of ordenados) valores.push(...juntarIguais(nd, qtd, sobras, notas1));
+  if (notas1.length) {
+    passos.push({ t: 'Criaturas de mesmo ND contam como uma só: +2 de ND a cada vez que a quantidade dobra',
+      l: [...notas1, `Grupos resultantes: ${[...valores].sort((a, b) => b - a).map(v => `ND ${fmtND(v)}`).join(', ')}`] });
   }
-  if (notas1.length) passos.push('ND iguais: ' + notas1.join('; '));
 
   // Repete enquanto houver valores iguais
   for (let guard = 0; guard < 20; guard++) {
@@ -709,27 +739,38 @@ function calcularND(criaturas, sobras) {
     const notas = [];
     valores = [];
     for (const [v, n] of cont) valores.push(...juntarIguais(v, n, sobras, notas));
-    passos.push('ND iguais de novo: ' + notas.join('; '));
+    passos.push({ t: 'Grupos que ficaram com o mesmo ND são juntados de novo',
+      l: [...notas, `Grupos resultantes: ${[...valores].sort((a, b) => b - a).map(v => `ND ${fmtND(v)}`).join(', ')}`] });
   }
 
-  // Etapa 2: ND diferentes
+  // ND diferentes
   valores.sort((a, b) => b - a);
   const maior = valores[0];
   let total = maior;
   if (valores.length > 1) {
-    const partes = [`maior ND ${fmtND(maior)}`];
+    const l = [`Parte do maior ND: <b>${fmtND(maior)}</b>`];
+    const somas = [fmtND(maior)];
     for (const v of valores.slice(1)) {
       const dif = Math.ceil(r4(maior - v) - 1e-9);
       const bonus = dif === 1 ? 1 : dif === 2 ? 0.5 : dif === 3 ? 0.25 : 0;
       total += bonus;
-      partes.push(bonus ? `ND ${fmtND(v)} (${dif} abaixo) +${fmtND(bonus)}` : `ND ${fmtND(v)} (${dif} abaixo) não conta`);
+      if (bonus) somas.push(fmtDec(bonus));
+      l.push(bonus
+        ? `ND ${fmtND(v)} está ${dif} ${plural(dif, 'ponto', 'pontos')} abaixo → <b>+${fmtDec(bonus)}</b>`
+        : `ND ${fmtND(v)} está ${dif} pontos abaixo → não conta (4 ou mais abaixo)`);
     }
-    passos.push('ND diferentes: ' + partes.join(', '));
+    l.push(`Soma: ${somas.join(' + ')} = <b>${fmtDec(r4(total))}</b>`);
+    passos.push({ t: 'NDs diferentes: maior ND +1 (1 abaixo), +0,5 (2 abaixo), +0,25 (3 abaixo)', l });
   }
   total = r4(total);
   const final = total >= 1 ? Math.floor(total) : total;
-  if (final !== total) passos.push(`Total ${fmtND(total)} → arredondado para baixo: ND ${fmtND(final)}`);
+  passos.push({ t: 'Resultado', l: [final !== total
+    ? `${fmtDec(total)} arredondado para baixo = <b>ND ${fmtND(final)}</b>`
+    : `<b>ND ${fmtND(final)}</b>`] });
   return { nd: final, bruto: total, passos };
+}
+function htmlPassos(passos, cls = '') {
+  return `<ol class="calc ${cls}">${passos.map(p => `<li><b class="calc-t">${p.t}</b>${p.l.length ? `<ul>${p.l.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}</li>`).join('')}</ol>`;
 }
 
 /* ===== Estado ===== */
@@ -904,7 +945,20 @@ function validarEncontros() {
   const total = calcularND(encs.flatMap(e => e.ameacas.filter(a => a.tipo === 'criatura')), S.sobras);
   const nd = total ? total.nd : null;
   const status = nd == null ? 'vazio' : r4(nd) === alvo ? 'ok' : nd < alvo ? 'abaixo' : 'acima';
-  return { alvo, itens, nd, passos: total ? total.passos : [], status, acima: status === 'acima' };
+  const fora = S.encontros.filter(e => e.feito === false);
+  const passos = total ? [
+    { t: 'Juntar as criaturas de todos os encontros realizados',
+      l: [...encs.map(e => {
+            const cs = e.ameacas.filter(a => a.tipo === 'criatura' && a.qtd > 0);
+            return `${esc(e.nome)}: ${cs.length ? cs.map(a => `${a.qtd}× ${esc(a.nome || 'criatura')} (ND ${fmtND(a.nd)}${a.chefe ? ', chefe' : ''})`).join(', ') : 'sem criaturas'}`;
+          }),
+          ...fora.map(e => `<s>${esc(e.nome)}</s>: não realizado, fica de fora`)] },
+    ...total.passos,
+    { t: 'Comparar com o ND alvo',
+      l: [`Alvo = ND da missão ${fmtND(S.nd)}${dif.offset ? ` + ${dif.offset} (${dif.curto})` : ' (Normal)'} = <b>ND ${fmtND(alvo)}</b>`,
+          `ND da missão ${fmtND(nd)} ${status === 'ok' ? '=' : status === 'acima' ? '>' : '<'} ${fmtND(alvo)} → <b>${STATUS_VAL[status][1].toLowerCase()}</b>`] },
+  ] : [];
+  return { alvo, itens, nd, passos, status, acima: status === 'acima' };
 }
 const STATUS_VAL = { ok: ['ok', 'No alvo'], abaixo: ['warn', 'Abaixo do alvo'], acima: ['bad', 'Acima do alvo'], vazio: ['', 'Sem criaturas'] };
 function htmlValidacao(v, titulo = true) {
@@ -915,7 +969,7 @@ function htmlValidacao(v, titulo = true) {
     <div class="${cls}">${icone} ND ${v.nd != null ? fmtND(v.nd) : '—'} · ${STATUS_VAL[v.status][1]} (ND ${fmtND(v.alvo)})</div>
     ${v.itens.map(i => `<div class="kv"><span>${esc(i.nome)}</span><strong>${i.nd != null ? 'ND ' + fmtND(i.nd) : 'sem criaturas'}</strong></div>`).join('')
       || '<p class="note">Nenhum encontro realizado.</p>'}
-    ${v.passos.length ? `<details class="val-passos"><summary>Como chegou no ND ${fmtND(v.nd)}</summary><ol class="steps">${v.passos.map(p => `<li>${esc(p)}</li>`).join('')}</ol></details>` : ''}`;
+    ${v.passos.length && typeof v.passos[0] === 'object' ? `<details class="val-passos"><summary>Como chegou no ND ${fmtND(v.nd)}</summary>${htmlPassos(v.passos, 'compacto')}</details>` : ''}`;
 }
 
 // Recompensas da missão com ND: total da sessão e divisão pelos jogadores (como o mission_t20).
@@ -969,7 +1023,7 @@ function atualizar() {
       <div class="nd-badge"><div><small>ND</small><b>${r ? fmtND(r.nd) : '—'}</b></div></div>
       <div>
         ${r ? pill : '<span class="pill">Sem criaturas</span>'}
-        ${r && r.passos.length ? `<ol class="steps">${r.passos.map(p => `<li>${esc(p)}</li>`).join('')}</ol>` : ''}
+        ${r ? `<details class="calc-wrap"><summary>Como chegou no ND ${fmtND(r.nd)}</summary>${htmlPassos(r.passos)}</details>` : ''}
         <div class="meta">XP das ameaças deste encontro: <b>${fmtNum(xp)}</b> · Tesouro das criaturas: <b>T$ ${fmtNum(tesAmeacas(e))}</b>${e.feito === false ? ' · <b style="color:var(--warn)">Não realizado: fora das recompensas e da validação</b>' : ''}</div>
       </div>`;
   });
@@ -1026,6 +1080,7 @@ function atualizar() {
   $('#summary').innerHTML = html + `<p class="note">${semND ? 'Valores por personagem.' : 'Personagens que morrem sem expectativa de reviver não entram no cálculo do grupo: diminua o número de jogadores.'}</p>`;
   $('#mbar').innerHTML = mbar + `<button class="btn primary" type="button" data-go="rewards">Detalhes</button>`;
   $('#p-saida').innerHTML = renderDiscord(postagemTexto());
+  renderNdMissao();
   renderFechamento();
   salvar();
 }
@@ -1086,6 +1141,8 @@ function resumoTexto() {
     const lista = e.ameacas.filter(a => a.qtd > 0).map(a => `${a.qtd}× ${a.nome || TIPOS[a.tipo]} (ND ${fmtND(a.nd)}${a.chefe ? ', chefe' : ''})`).join(', ');
     linhas.push(`• ${e.nome}: ${r ? 'ND ' + fmtND(r.nd) : 'sem criaturas'} — ${lista || 'vazio'}`);
   }
+  const V = validarEncontros();
+  if (V && V.nd != null) linhas.push(`ND da missão (todas as criaturas): ${fmtND(V.nd)} — ${STATUS_VAL[V.status][1].toLowerCase()} (alvo ${fmtND(V.alvo)})`);
   const R = recompensas();
   linhas.push(`Jogadores: ${R.jog}`);
   linhas.push(`Sucesso: ${fmtNum(R.ok.total)} XP (${fmtNum(R.ok.porJog)} por jogador) + T$ ${fmtNum(R.ts.total)} (T$ ${fmtNum(R.ts.porJog)} por jogador) + 0,5 PeA`);
@@ -1389,6 +1446,25 @@ box.addEventListener('click', ev => {
   else if (act === 'exp-enc') { copiar(exportarEncontro(e), 'Código do encontro copiado'); return; }
   montarEncontros();
 });
+
+/* ===== Cartão: ND final da missão ===== */
+function renderNdMissao() {
+  const box = $('#nd-missao');
+  const V = validarEncontros();
+  if (!V || V.nd == null) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  const cls = { ok: 'ok', abaixo: 'warn', acima: 'bad' }[V.status] || '';
+  box.innerHTML = `
+    <div class="card-head"><h2 class="card-title"><span class="ico">${icon('i-sword')}</span>ND final da missão</h2></div>
+    <div class="result ${cls}" style="margin-top:0">
+      <div class="nd-badge"><div><small>ND</small><b>${fmtND(V.nd)}</b></div></div>
+      <div>
+        <span class="pill ${STATUS_VAL[V.status][0]}">${STATUS_VAL[V.status][1]} · alvo ND ${fmtND(V.alvo)}</span>
+        <p class="meta" style="margin-top:6px">O ND da missão junta as criaturas de todos os encontros realizados e aplica as regras de ND, passo a passo:</p>
+      </div>
+    </div>
+    ${htmlPassos(V.passos, 'grande')}`;
+}
 
 /* ===== Trava de missão fechada ===== */
 function aplicarTrava() {
