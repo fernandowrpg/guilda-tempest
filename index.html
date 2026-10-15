@@ -250,11 +250,30 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 /* ---------- Post ---------- */
 .post-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
 @media (max-width:780px){.post-grid{grid-template-columns:minmax(0,1fr)}}
-.preview{white-space:pre-wrap;word-break:break-word;margin:0;min-height:260px;max-height:520px;overflow:auto;
+.preview{word-break:break-word;margin:0;min-height:260px;max-height:520px;overflow:auto;
   padding:14px 16px;border-radius:12px;background:#313338;color:#dbdee1;border:1px solid #1e1f22;
   font:14px/1.4 "gg sans","Inter",system-ui,sans-serif}
+.preview .ln{min-height:1.4em;white-space:pre-wrap}
+.preview .h1{font-size:1.5em;font-weight:700;line-height:1.3;margin:.2em 0}
+.preview .h2{font-size:1.25em;font-weight:700;line-height:1.3;margin:.2em 0}
+.preview .h3{font-size:1.1em;font-weight:700;margin:.2em 0}
+.preview .q{border-left:4px solid #4e5058;padding-left:10px}
+.preview .li{padding-left:16px;position:relative}
+.preview .li::before{content:"•";position:absolute;left:4px}
+.preview code{background:#2b2d31;border:1px solid #1e1f22;border-radius:4px;padding:0 4px;font:13px/1.4 ui-monospace,Consolas,monospace}
+.preview .sp{background:#1e1f22;color:transparent;border-radius:3px;cursor:pointer;transition:color .15s}
+.preview .sp:hover,.preview .sp.open{background:#3c3e45;color:inherit}
 .preview-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .preview-head .dot{width:10px;height:10px;border-radius:50%;background:#5865f2}
+
+/* ---------- Editor ---------- */
+.editor{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-2);overflow:hidden;transition:border-color .15s,box-shadow .15s}
+.editor:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.editor textarea{border:0 !important;box-shadow:none !important;border-radius:0;background:transparent;display:block}
+.tb{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:1px;padding:4px;border-bottom:1px solid var(--line);background:var(--panel)}
+.tb button{flex:none;min-width:30px;height:30px;padding:0 6px;border:0;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;font-size:.85rem;line-height:1}
+.tb button:hover{background:var(--accent-soft);color:var(--accent)}
+.tb .sep{width:1px;margin:5px 3px;background:var(--line)}
 
 /* ---------- Rules ---------- */
 details summary{cursor:pointer;font-weight:700;list-style:none;display:flex;align-items:center;gap:10px}
@@ -388,18 +407,18 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px}
       <div>
         <div class="fields">
           <div class="field-wide"><label for="p-local">📍 Local</label><input id="p-local" type="text" data-p="local" placeholder="Rishantor, O Palácio dos Palácios (Ahlen)"></div>
-          <div><label for="p-objetivo">🎯 Objetivo</label><input id="p-objetivo" type="text" data-p="objetivo" placeholder="???"></div>
           <div><label for="p-contratante">🛂 Contratante</label><input id="p-contratante" type="text" data-p="contratante" placeholder="Rei Nonato Vorlat"></div>
-          <div><label for="p-data">⌚ Data e Horário</label><input id="p-data" type="text" data-p="data" placeholder="16/10 - 18h"></div>
+          <div><label for="p-data">⌚ Data e Horário</label><input id="p-data" type="text" data-p="data"></div>
           <div><label for="p-vagas">Vagas</label><input id="p-vagas" type="number" min="1" step="1" inputmode="numeric" data-p="vagas"></div>
           <div class="field-wide"><label for="p-diflabel">Nome da dificuldade (opcional)</label><input id="p-diflabel" type="text" data-p="difLabel" placeholder="Usa o nome padrão da dificuldade"></div>
+          <div class="field-wide"><label for="p-objetivo">🎯 Objetivo</label><textarea id="p-objetivo" data-p="objetivo" rows="2" placeholder="???"></textarea></div>
           <div class="field-wide"><label for="p-resumo">📝 Resumo</label><textarea id="p-resumo" data-p="resumo" rows="4"></textarea></div>
           <div class="field-wide"><label for="p-regras">Regras utilizadas (uma por linha)</label><textarea id="p-regras" data-p="regras" rows="3"></textarea></div>
         </div>
       </div>
       <div>
         <div class="preview-head"><span class="dot"></span><span class="lbl" style="margin:0">Prévia da postagem</span></div>
-        <pre class="preview" id="p-saida"></pre>
+        <div class="preview" id="p-saida"></div>
         <button class="btn primary block" id="btn-post" type="button" style="margin-top:12px"><svg><use href="#i-copy"/></svg>Copiar postagem</button>
       </div>
     </div>
@@ -774,7 +793,7 @@ function atualizar() {
   $('#f-jog').classList.toggle('hidden', semND);
   $('#summary').innerHTML = html + `<p class="note">${semND ? 'Valores por personagem.' : 'Personagens que morrem sem expectativa de reviver não entram no cálculo do grupo: diminua o número de jogadores.'}</p>`;
   $('#mbar').innerHTML = mbar + `<button class="btn primary" type="button" data-go="rewards">Detalhes</button>`;
-  $('#p-saida').textContent = postagemTexto();
+  $('#p-saida').innerHTML = renderDiscord(postagemTexto());
   salvar();
 }
 
@@ -837,6 +856,91 @@ function resumoTexto() {
   linhas.push(`Falha: ${fmtNum(R.falha.total)} XP (${fmtNum(R.falha.porJog)} por jogador)`);
   return linhas.join('\n');
 }
+
+/* ===== Markdown do Discord: prévia ===== */
+function inlineMd(t) {
+  const codes = [];
+  t = t.replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return `\u0000${codes.length - 1}\u0000`; });
+  t = t
+    .replace(/\|\|(.+?)\|\|/g, '<span class="sp" title="Spoiler">$1</span>')
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<b><i>$1</i></b>')
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/__(.+?)__/g, '<u>$1</u>')
+    .replace(/\*(?!\s)(.+?)\*/g, '<i>$1</i>')
+    .replace(/(^|[^\w])_(.+?)_(?!\w)/g, '$1<i>$2</i>')
+    .replace(/~~(.+?)~~/g, '<s>$1</s>');
+  return t.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[i]}</code>`);
+}
+function renderDiscord(txt) {
+  return esc(txt).split('\n').map(l => {
+    let m;
+    if ((m = l.match(/^(#{1,3}) (.*)$/))) return `<div class="ln h${m[1].length}">${inlineMd(m[2])}</div>`;
+    if ((m = l.match(/^&gt; ?(.*)$/))) return `<div class="ln q">${inlineMd(m[1]) || '&nbsp;'}</div>`;
+    if ((m = l.match(/^\s*[-*] (.*)$/))) return `<div class="ln li">${inlineMd(m[1])}</div>`;
+    return `<div class="ln">${inlineMd(l)}</div>`;
+  }).join('');
+}
+
+/* ===== Editor (barra de formatação nos textareas) ===== */
+const FERRAMENTAS = [
+  { t: '<b>B</b>', title: 'Negrito (Ctrl+B)', wrap: '**', key: 'b' },
+  { t: '<i>I</i>', title: 'Itálico (Ctrl+I)', wrap: '*', key: 'i' },
+  { t: '<u>U</u>', title: 'Sublinhado (Ctrl+U)', wrap: '__', key: 'u' },
+  { t: '<s>S</s>', title: 'Riscado', wrap: '~~' },
+  { t: '▮▮', title: 'Spoiler', wrap: '||' },
+  { t: '&lt;/&gt;', title: 'Código', wrap: '`' },
+  { sep: true },
+  { t: 'H', title: 'Título', line: '## ' },
+  { t: '❝', title: 'Citação', line: '> ' },
+  { t: '•', title: 'Lista', line: '- ' },
+];
+function aplicarFormato(ta, f) {
+  const { selectionStart: a, selectionEnd: b, value: v } = ta;
+  if (f.wrap) {
+    const w = f.wrap, sel = v.slice(a, b);
+    if (sel.startsWith(w) && sel.endsWith(w) && sel.length >= w.length * 2) {
+      ta.setRangeText(sel.slice(w.length, sel.length - w.length), a, b, 'select');
+    } else if (v.slice(a - w.length, a) === w && v.slice(b, b + w.length) === w) {
+      ta.setRangeText(sel, a - w.length, b + w.length, 'select');
+    } else {
+      ta.setRangeText(w + sel + w, a, b, 'select');
+      ta.setSelectionRange(a + w.length, b + w.length);
+    }
+  } else {
+    const ini = v.lastIndexOf('\n', a - 1) + 1;
+    let fim = v.indexOf('\n', b); if (fim < 0) fim = v.length;
+    const linhas = v.slice(ini, fim).split('\n');
+    const todas = linhas.every(l => l.startsWith(f.line));
+    const novo = linhas.map(l => todas ? l.slice(f.line.length) : f.line + l).join('\n');
+    ta.setRangeText(novo, ini, fim, 'select');
+  }
+  ta.focus();
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
+document.querySelectorAll('textarea[data-p]').forEach(ta => {
+  const ed = document.createElement('div');
+  ed.className = 'editor';
+  const tb = document.createElement('div');
+  tb.className = 'tb';
+  tb.setAttribute('role', 'toolbar');
+  tb.setAttribute('aria-label', 'Formatação');
+  FERRAMENTAS.forEach(f => {
+    if (f.sep) { tb.insertAdjacentHTML('beforeend', '<span class="sep"></span>'); return; }
+    const bt = document.createElement('button');
+    bt.type = 'button'; bt.innerHTML = f.t; bt.title = f.title; bt.setAttribute('aria-label', f.title);
+    bt.addEventListener('mousedown', e => e.preventDefault());
+    bt.addEventListener('click', () => aplicarFormato(ta, f));
+    tb.appendChild(bt);
+  });
+  ta.replaceWith(ed);
+  ed.append(tb, ta);
+  ta.addEventListener('keydown', e => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const f = FERRAMENTAS.find(x => x.key === e.key.toLowerCase());
+    if (f) { e.preventDefault(); aplicarFormato(ta, f); }
+  });
+});
+$('#p-saida').addEventListener('click', e => { const sp = e.target.closest('.sp'); if (sp) sp.classList.toggle('open'); });
 
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
