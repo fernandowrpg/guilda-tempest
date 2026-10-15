@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de Encontros — Guilda Tempest</title>
+<meta name="description" content="Calcula o ND de encontros, a dificuldade e as recompensas das missões da Guilda Tempest (Tormenta 20).">
+<style>
+:root{
+  --bg:#f4f2ee; --panel:#ffffff; --panel-2:#f8f7f4; --ink:#1d1b18; --muted:#6b665e;
+  --line:#e2ded6; --accent:#5b3fc4; --accent-ink:#ffffff; --accent-soft:#ece8fb;
+  --ok:#1f7a4a; --ok-soft:#e3f3ea; --warn:#9a5b00; --warn-soft:#fbefd9; --bad:#b3261e; --bad-soft:#fbe4e2;
+  --radius:12px; --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131218; --panel:#1c1b22; --panel-2:#23222b; --ink:#ecebf0; --muted:#a19eab;
+    --line:#2f2d38; --accent:#a08cf5; --accent-ink:#15131c; --accent-soft:#2a2540;
+    --ok:#6fd39c; --ok-soft:#18301f; --warn:#f0b65a; --warn-soft:#33270f; --bad:#ff8a80; --bad-soft:#3a1b1a;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131218; --panel:#1c1b22; --panel-2:#23222b; --ink:#ecebf0; --muted:#a19eab;
+  --line:#2f2d38; --accent:#a08cf5; --accent-ink:#15131c; --accent-soft:#2a2540;
+  --ok:#6fd39c; --ok-soft:#18301f; --warn:#f0b65a; --warn-soft:#33270f; --bad:#ff8a80; --bad-soft:#3a1b1a;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 64px}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+h1{font-size:1.6rem;margin:0;letter-spacing:-.01em}
+h1 small{display:block;font-size:.85rem;font-weight:500;color:var(--muted);letter-spacing:0}
+h2{font-size:1.05rem;margin:0 0 12px}
+h3{font-size:.95rem;margin:0}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
+.sticky{position:sticky;top:16px}
+@media (max-width:860px){.sticky{position:static}}
+label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:4px;font-weight:600}
+input,select,button{font:inherit;color:inherit}
+textarea{resize:vertical;font-family:inherit}
+input[type=text],input[type=number],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2)}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.btn{border:1px solid var(--line);background:var(--panel-2);padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted);padding:6px 8px}
+.btn.ghost:hover{color:var(--bad)}
+.row-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.enc-head{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.enc-head input{font-weight:700}
+.threat{display:grid;grid-template-columns:130px minmax(0,1fr) 90px 70px 80px 34px;gap:8px;align-items:end;padding:10px 0;border-top:1px dashed var(--line)}
+.threat:first-of-type{border-top:0}
+.threat .chk{display:flex;align-items:center;gap:6px;font-size:.85rem;height:38px;white-space:nowrap}
+@media (max-width:640px){
+  .threat{grid-template-columns:1fr 1fr;}
+  .threat .name{grid-column:1 / -1;order:-1}
+  .threat .del{justify-self:end}
+}
+.threat .lbl-m{display:none}
+@media (max-width:640px){.threat .lbl-m{display:block}}
+.thead{display:grid;grid-template-columns:130px minmax(0,1fr) 90px 70px 80px 34px;gap:8px;font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:640px){.thead{display:none}}
+.result{margin-top:14px;padding:12px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line)}
+.result .big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.result .nd{font-size:1.6rem;font-weight:800}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.8rem;font-weight:700}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.steps{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:.88rem}
+.steps li{margin:2px 0}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)}
+.kv:last-child{border-bottom:0}
+.kv span:first-child{color:var(--muted)}
+.kv strong{text-align:right}
+.total{font-size:1.25rem}
+.section-title{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:14px 0 4px}
+.note{font-size:.82rem;color:var(--muted);margin:8px 0 0}
+details{margin-top:4px}
+summary{cursor:pointer;font-weight:600}
+details .rules{font-size:.88rem;color:var(--muted)}
+details .rules ul{padding-left:18px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Calculadora de Encontros<small>Guilda Tempest · Tormenta 20</small></h1>
+    <div class="row-actions" style="margin:0">
+      <button class="btn" id="btn-link" type="button">Copiar link</button>
+      <button class="btn" id="btn-reset" type="button">Limpar</button>
+      <button class="btn" id="btn-theme" type="button" aria-label="Alternar tema">◐</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <main>
+      <section class="card">
+        <h2>Missão</h2>
+        <div class="fields">
+          <div>
+            <label for="m-dif">Dificuldade</label>
+            <select id="m-dif"></select>
+          </div>
+          <div id="f-nd">
+            <label for="m-nd">ND da missão</label>
+            <select id="m-nd"></select>
+          </div>
+          <div id="f-nivel" class="hidden">
+            <label for="m-nivel">Nível do personagem</label>
+            <select id="m-nivel"></select>
+          </div>
+          <div>
+            <label for="m-ts">T$ base (opcional)</label>
+            <input id="m-ts" type="number" min="0" step="1" placeholder="da tabela">
+          </div>
+        </div>
+        <p class="note" id="m-note"></p>
+      </section>
+
+      <section class="card">
+        <h2>Postagem</h2>
+        <div class="fields">
+          <div><label for="p-local">📍 Local</label><input id="p-local" type="text" data-p="local" placeholder="ex.: Rishantor, O Palácio dos Palácios (Ahlen)"></div>
+          <div><label for="p-objetivo">🎯 Objetivo</label><input id="p-objetivo" type="text" data-p="objetivo" placeholder="???"></div>
+          <div><label for="p-contratante">🛂 Contratante</label><input id="p-contratante" type="text" data-p="contratante"></div>
+          <div><label for="p-data">⌚ Data e Horário</label><input id="p-data" type="text" data-p="data" placeholder="16/10 - 18h"></div>
+          <div><label for="p-vagas">Vagas</label><input id="p-vagas" type="number" min="1" step="1" data-p="vagas"></div>
+          <div><label for="p-diflabel">Nome da dificuldade (opcional)</label><input id="p-diflabel" type="text" data-p="difLabel" placeholder="usa o nome padrão"></div>
+        </div>
+        <div style="margin-top:12px"><label for="p-resumo">📝 Resumo</label><textarea id="p-resumo" data-p="resumo" rows="4"></textarea></div>
+        <div style="margin-top:12px"><label for="p-regras">Regras utilizadas (uma por linha)</label><textarea id="p-regras" data-p="regras" rows="3"></textarea></div>
+        <div style="margin-top:12px"><label for="p-saida">Texto gerado</label><textarea id="p-saida" rows="14" readonly></textarea></div>
+        <div class="row-actions">
+          <button class="btn primary" id="btn-post" type="button">Copiar postagem</button>
+        </div>
+      </section>
+
+      <div id="encounters"></div>
+      <button class="btn primary" id="btn-add-enc" type="button">+ Adicionar encontro</button>
+
+      <section class="card" style="margin-top:16px">
+        <details>
+          <summary>Regras usadas no cálculo</summary>
+          <div class="rules">
+            <ul>
+              <li><b>Criaturas de ND igual</b> contam como uma só. ND &lt; 1: some os NDs. ND ≥ 1: +2 no ND cada vez que a quantidade dobra (1→ND, 2→+2, 4→+4, 8→+6…).</li>
+              <li><b>Sobras</b> (ex.: 3 criaturas = 2 + 1): por padrão, a criatura que sobra vira um grupo próprio e entra na etapa seguinte. Dá para trocar para “ignorar sobras” abaixo.</li>
+              <li><b>Criaturas de ND diferente:</b> maior ND, +1 para cada uma 1 ND abaixo, +0,5 para 2 abaixo, +0,25 para 3 abaixo; 4 ou mais abaixo não contam. Diferenças fracionadas são arredondadas para cima (ex.: 1,5 abaixo conta como 2 abaixo).</li>
+              <li>Se depois de juntar os grupos aparecerem NDs iguais de novo, eles são juntados outra vez antes de somar os diferentes.</li>
+              <li><b>Chefe Final:</b> +2 de ND só para a dificuldade (o XP usa o ND real).</li>
+              <li>Resultado final sempre arredondado para baixo.</li>
+              <li>Só <b>criaturas</b> entram no ND do encontro. Armadilhas e perigos complexos entram só no XP.</li>
+              <li><b>XP de cada ameaça</b> = 1000 × ND (ND 1/2 = 500).</li>
+              <li><b>Sucesso:</b> 1000 × ND da missão + % da dificuldade sobre o XP de todas as ameaças. T$ da tabela “Dinheiro Médio por cena” e 0,5 PeA.</li>
+              <li><b>Falha:</b> 500 × ND da missão + 20% do XP de cada ameaça enfrentada (mesmo não derrotada).</li>
+              <li><b>Sem ND:</b> 1/3 do XP do nível (nível × 1000) e 1/3 da recompensa média do nível.</li>
+            </ul>
+            <label for="o-sobras" style="margin-top:8px">Sobras ao dobrar</label>
+            <select id="o-sobras" style="max-width:320px">
+              <option value="decompor">Contar a sobra como grupo separado</option>
+              <option value="ignorar">Ignorar sobras</option>
+            </select>
+          </div>
+        </details>
+      </section>
+    </main>
+
+    <aside class="sticky">
+      <section class="card">
+        <h2>Recompensas por personagem</h2>
+        <div id="summary"></div>
+        <div class="row-actions">
+          <button class="btn primary" id="btn-copy" type="button">Copiar resumo</button>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== Tabela "Dinheiro Médio por cena" =====
+   Preencha com os valores da guilda (ND/nível → T$).
+   Valores vazios deixam o campo "T$ base" para preenchimento manual. */
+const DINHEIRO_MEDIO = {
+  4: 1000,
+  20: 72000,
+};
+
+const DIFICULDADES = {
+  normal:   { nome: 'Normal',       offset: 0, pct: 0.40 },
+  dificil:  { nome: 'Difícil +1',   offset: 1, pct: 0.50 },
+  valkaria: { nome: 'Valkaria +2',  offset: 2, pct: 0.60 },
+  tormenta: { nome: 'Tormenta +3',  offset: 3, pct: 0.70 },
+  semnd:    { nome: 'Sem ND (?)',   offset: null, pct: 0 },
+};
+const PCT_FALHA = 0.20;
+const TIPOS = { criatura: 'Criatura', armadilha: 'Armadilha', perigo: 'Perigo complexo' };
+const ND_OPCOES = [0.25, 1/3, 0.5, ...Array.from({ length: 20 }, (_, i) => i + 1)];
+
+/* ===== Utilidades ===== */
+const r4 = n => Math.round(n * 10000) / 10000;
+function fmtND(n) {
+  n = r4(n);
+  if (n === 0.25) return '1/4';
+  if (n === 0.3333) return '1/3';
+  if (n === 0.5) return '1/2';
+  if (n === 0.75) return '3/4';
+  return Number.isInteger(n) ? String(n) : String(n).replace('.', ',');
+}
+const fmtNum = n => Math.round(n).toLocaleString('pt-BR');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ndValue = v => { const n = parseFloat(v); return isFinite(n) && n > 0 ? n : 1; };
+function ndOptionsHTML(sel) {
+  return ND_OPCOES.map(n => `<option value="${r4(n)}"${r4(n) === r4(sel) ? ' selected' : ''}>${fmtND(n)}</option>`).join('');
+}
+
+/* ===== Cálculo de ND do encontro ===== */
+// Junta `qtd` criaturas de mesmo ND. Retorna lista de valores resultantes + notas explicativas.
+function juntarIguais(nd, qtd, sobras, notas) {
+  if (qtd <= 1) return [nd];
+  if (nd < 1) {
+    const v = r4(nd * qtd);
+    notas.push(`${qtd}× ND ${fmtND(nd)} → somados = ND ${fmtND(v)}`);
+    return [v];
+  }
+  let k = 0, p = 1;
+  while (p * 2 <= qtd) { p *= 2; k++; }
+  const v = nd + 2 * k;
+  const resto = qtd - p;
+  notas.push(`${p}× ND ${fmtND(nd)} → ND ${fmtND(v)} (dobrou ${k}×, +${2 * k})`);
+  if (resto === 0) return [v];
+  if (sobras === 'ignorar') {
+    notas.push(`sobra de ${resto}× ND ${fmtND(nd)} ignorada`);
+    return [v];
+  }
+  notas.push(`sobra de ${resto}× ND ${fmtND(nd)} vira grupo separado`);
+  return [v, ...juntarIguais(nd, resto, sobras, notas)];
+}
+
+function calcularND(criaturas, sobras) {
+  const passos = [];
+  const lista = criaturas.filter(c => c.qtd > 0);
+  if (!lista.length) return null;
+
+  // Etapa 0: chefes +2
+  const chefes = lista.filter(c => c.chefe);
+  if (chefes.length) {
+    passos.push('Chefe Final: ' + chefes.map(c => `${c.nome || 'chefe'} ND ${fmtND(c.nd)} → ${fmtND(c.nd + 2)}`).join('; '));
+  }
+
+  // Etapa 1: agrupar por ND efetivo
+  const grupos = new Map();
+  for (const c of lista) {
+    const nd = r4(c.nd + (c.chefe ? 2 : 0));
+    grupos.set(nd, (grupos.get(nd) || 0) + c.qtd);
+  }
+  let valores = [];
+  const notas1 = [];
+  for (const [nd, qtd] of [...grupos].sort((a, b) => b[0] - a[0])) {
+    valores.push(...juntarIguais(nd, qtd, sobras, notas1));
+  }
+  if (notas1.length) passos.push('ND iguais: ' + notas1.join('; '));
+
+  // Repete enquanto houver valores iguais
+  for (let guard = 0; guard < 20; guard++) {
+    const cont = new Map();
+    for (const v of valores) cont.set(r4(v), (cont.get(r4(v)) || 0) + 1);
+    if ([...cont.values()].every(n => n === 1)) break;
+    const notas = [];
+    valores = [];
+    for (const [v, n] of cont) valores.push(...juntarIguais(v, n, sobras, notas));
+    passos.push('ND iguais de novo: ' + notas.join('; '));
+  }
+
+  // Etapa 2: ND diferentes
+  valores.sort((a, b) => b - a);
+  const maior = valores[0];
+  let total = maior;
+  if (valores.length > 1) {
+    const partes = [`maior ND ${fmtND(maior)}`];
+    for (const v of valores.slice(1)) {
+      const dif = Math.ceil(r4(maior - v) - 1e-9);
+      const bonus = dif === 1 ? 1 : dif === 2 ? 0.5 : dif === 3 ? 0.25 : 0;
+      total += bonus;
+      partes.push(bonus ? `ND ${fmtND(v)} (${dif} abaixo) +${fmtND(bonus)}` : `ND ${fmtND(v)} (${dif} abaixo) não conta`);
+    }
+    passos.push('ND diferentes: ' + partes.join(', '));
+  }
+  total = r4(total);
+  const final = total >= 1 ? Math.floor(total) : total;
+  if (final !== total) passos.push(`Total ${fmtND(total)} → arredondado para baixo: ND ${fmtND(final)}`);
+  return { nd: final, bruto: total, passos };
+}
+
+/* ===== Estado ===== */
+const STORAGE_KEY = 'tempest-encontros-v1';
+const novaAmeaca = (tipo = 'criatura') => ({ tipo, nome: '', nd: 1, qtd: 1, chefe: false });
+const novoEncontro = n => ({ nome: `Encontro ${n}`, ameacas: [novaAmeaca()] });
+const postPadrao = () => ({ local: '', objetivo: '', contratante: '', data: '', vagas: 4, difLabel: '', resumo: '', regras: '' });
+const estadoPadrao = () => ({ dif: 'normal', nd: 4, nivel: 5, ts: '', sobras: 'decompor', post: postPadrao(), encontros: [novoEncontro(1)] });
+
+function carregar() {
+  try {
+    if (location.hash.length > 1) {
+      const s = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));
+      if (s && Array.isArray(s.encontros)) return { ...estadoPadrao(), ...s, post: { ...postPadrao(), ...s.post } };
+    }
+  } catch (e) {}
+  try {
+    const s = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (s && Array.isArray(s.encontros)) return { ...estadoPadrao(), ...s, post: { ...postPadrao(), ...s.post } };
+  } catch (e) {}
+  return estadoPadrao();
+}
+let S = carregar();
+function salvar() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(S)); } catch (e) {}
+}
+const linkEstado = () => location.href.split('#')[0] + '#' + btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+
+/* ===== Interface ===== */
+const $ = s => document.querySelector(s);
+
+function montarMissao() {
+  $('#m-dif').innerHTML = Object.entries(DIFICULDADES).map(([k, d]) => `<option value="${k}"${k === S.dif ? ' selected' : ''}>${d.nome}</option>`).join('');
+  $('#m-nd').innerHTML = ndOptionsHTML(S.nd);
+  $('#m-nivel').innerHTML = Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}"${i + 1 === +S.nivel ? ' selected' : ''}>${i + 1}</option>`).join('');
+  $('#m-ts').value = S.ts;
+  $('#o-sobras').value = S.sobras;
+  document.querySelectorAll('[data-p]').forEach(el => { el.value = S.post[el.dataset.p] ?? ''; });
+}
+
+function montarEncontros() {
+  const box = $('#encounters');
+  box.innerHTML = S.encontros.map((e, ei) => `
+    <section class="card" data-ei="${ei}">
+      <div class="enc-head">
+        <input type="text" data-f="enc-nome" value="${esc(e.nome)}" aria-label="Nome do encontro">
+        <button class="btn ghost" type="button" data-act="del-enc" title="Remover encontro">✕</button>
+      </div>
+      <div class="thead"><span>Tipo</span><span>Nome</span><span>ND</span><span>Qtd</span><span>Chefe</span><span></span></div>
+      ${e.ameacas.map((a, ai) => `
+        <div class="threat" data-ai="${ai}">
+          <div><label class="lbl-m">Tipo</label><select data-f="tipo">${Object.entries(TIPOS).map(([k, t]) => `<option value="${k}"${k === a.tipo ? ' selected' : ''}>${t}</option>`).join('')}</select></div>
+          <div class="name"><label class="lbl-m">Nome</label><input type="text" data-f="nome" value="${esc(a.nome)}" placeholder="ex.: Goblin"></div>
+          <div><label class="lbl-m">ND</label><select data-f="nd">${ndOptionsHTML(a.nd)}</select></div>
+          <div><label class="lbl-m">Qtd</label><input type="number" min="0" step="1" data-f="qtd" value="${a.qtd}"></div>
+          <div><label class="chk${a.tipo !== 'criatura' ? ' hidden' : ''}"><input type="checkbox" data-f="chefe"${a.chefe ? ' checked' : ''}> Chefe</label></div>
+          <div class="del"><button class="btn ghost" type="button" data-act="del-ameaca" title="Remover">✕</button></div>
+        </div>`).join('')}
+      <div class="row-actions">
+        <button class="btn" type="button" data-act="add-ameaca" data-tipo="criatura">+ Criatura</button>
+        <button class="btn" type="button" data-act="add-ameaca" data-tipo="armadilha">+ Armadilha</button>
+        <button class="btn" type="button" data-act="add-ameaca" data-tipo="perigo">+ Perigo complexo</button>
+      </div>
+      <div class="result" data-res="${ei}"></div>
+    </section>`).join('');
+  atualizar();
+}
+
+function xpAmeacas(e) {
+  return e.ameacas.reduce((s, a) => s + 1000 * a.nd * Math.max(0, a.qtd), 0);
+}
+
+function atualizar() {
+  const dif = DIFICULDADES[S.dif];
+  const semND = dif.offset === null;
+  const alvo = semND ? null : r4(S.nd + dif.offset);
+
+  $('#f-nd').classList.toggle('hidden', semND);
+  $('#f-nivel').classList.toggle('hidden', !semND);
+  $('#m-note').textContent = semND
+    ? 'Missão sem ND: não tem dificuldade. Recompensa = 1/3 do XP do nível e 1/3 da recompensa média do nível.'
+    : `Encontros devem ter ND ${fmtND(alvo)} (ND ${fmtND(S.nd)}${dif.offset ? ' +' + dif.offset : ''}). XP das ameaças: ${dif.pct * 100}%.`;
+  const tsTabela = DINHEIRO_MEDIO[semND ? S.nivel : S.nd];
+  $('#m-ts').placeholder = tsTabela != null ? `tabela: ${fmtNum(tsTabela)}` : 'preencher';
+
+  // Resultado por encontro
+  S.encontros.forEach((e, ei) => {
+    const el = document.querySelector(`[data-res="${ei}"]`);
+    if (!el) return;
+    const criaturas = e.ameacas.filter(a => a.tipo === 'criatura');
+    const r = calcularND(criaturas, S.sobras);
+    const xp = xpAmeacas(e);
+    let pill = '';
+    if (r && alvo != null) {
+      if (r4(r.nd) === alvo) pill = `<span class="pill ok">No alvo (ND ${fmtND(alvo)})</span>`;
+      else if (r.nd < alvo) pill = `<span class="pill warn">Abaixo do alvo (ND ${fmtND(alvo)})</span>`;
+      else pill = `<span class="pill bad">Acima do alvo (ND ${fmtND(alvo)})</span>`;
+    }
+    el.innerHTML = r
+      ? `<div class="big"><span class="nd">ND ${fmtND(r.nd)}</span>${pill}</div>
+         <ol class="steps">${r.passos.map(p => `<li>${esc(p)}</li>`).join('')}</ol>
+         <p class="note">XP das ameaças deste encontro: ${fmtNum(xp)}</p>`
+      : `<div class="big"><span class="nd">—</span></div><p class="note">Sem criaturas neste encontro.${xp ? ' XP das ameaças: ' + fmtNum(xp) : ''}</p>`;
+  });
+
+  // Resumo
+  const ts = S.ts !== '' && S.ts != null ? +S.ts : tsTabela;
+  const tsTxt = ts != null && isFinite(ts) ? `T$ ${fmtNum(semND ? ts / 3 : ts)}` : '— (preencha T$ base)';
+  let html = '';
+  if (semND) {
+    const xpNivel = S.nivel * 1000;
+    html = `
+      <div class="kv"><span>Nível</span><strong>${S.nivel}</strong></div>
+      <div class="kv"><span>XP (1/3 de ${fmtNum(xpNivel)})</span><strong class="total">${fmtNum(xpNivel / 3)} XP</strong></div>
+      <div class="kv"><span>Tesouro (1/3)</span><strong>${tsTxt}</strong></div>
+      <div class="kv"><span>PeA</span><strong>0,5</strong></div>`;
+  } else {
+    const totalAmeacas = S.encontros.reduce((s, e) => s + xpAmeacas(e), 0);
+    const base = 1000 * S.nd;
+    const extra = totalAmeacas * dif.pct;
+    const baseFalha = 500 * S.nd;
+    const extraFalha = totalAmeacas * PCT_FALHA;
+    html = `
+      <div class="kv"><span>ND da missão</span><strong>${fmtND(S.nd)} · ${dif.nome}</strong></div>
+      <div class="kv"><span>ND dos encontros</span><strong>${fmtND(alvo)}</strong></div>
+      <div class="kv"><span>XP total das ameaças</span><strong>${fmtNum(totalAmeacas)}</strong></div>
+      <div class="section-title">Sucesso</div>
+      <div class="kv"><span>XP base (1000 × ${fmtND(S.nd)})</span><strong>${fmtNum(base)}</strong></div>
+      <div class="kv"><span>Ameaças (${dif.pct * 100}%)</span><strong>${fmtNum(extra)}</strong></div>
+      <div class="kv"><span>XP</span><strong class="total">${fmtNum(base + extra)} XP</strong></div>
+      <div class="kv"><span>Tesouro</span><strong>${tsTxt}</strong></div>
+      <div class="kv"><span>PeA</span><strong>0,5</strong></div>
+      <div class="section-title">Falha</div>
+      <div class="kv"><span>XP base (500 × ${fmtND(S.nd)})</span><strong>${fmtNum(baseFalha)}</strong></div>
+      <div class="kv"><span>Ameaças enfrentadas (20%)</span><strong>${fmtNum(extraFalha)}</strong></div>
+      <div class="kv"><span>XP</span><strong class="total">${fmtNum(baseFalha + extraFalha)} XP</strong></div>`;
+  }
+  $('#summary').innerHTML = html + '<p class="note">Personagens que morrem sem expectativa de reviver não entram no cálculo do grupo.</p>';
+  $('#p-saida').value = postagemTexto();
+  salvar();
+}
+
+function postagemTexto() {
+  const P = S.post;
+  const dif = DIFICULDADES[S.dif];
+  const semND = dif.offset === null;
+  const tsTabela = DINHEIRO_MEDIO[semND ? S.nivel : S.nd];
+  const ts = S.ts !== '' && S.ts != null ? +S.ts : tsTabela;
+  const L = [];
+  L.push(`📍 Local: ${P.local}`);
+  L.push(`🎯 Objetivo: ${P.objetivo}`);
+  L.push(`🛂 Contratante: ${P.contratante}`);
+  L.push(`⌚ Data e Horário: ${P.data}`);
+  L.push('');
+  L.push(`📝 Resumo: ${P.resumo}`);
+  L.push('');
+  if (semND) {
+    L.push('ND: ?');
+    L.push(`Dificuldade: ${P.difLabel || 'Sem ND'}`);
+    L.push(`XP: 1/3 do XP do nível`);
+    L.push(`Gold: 1/3 da recompensa média do nível`);
+  } else {
+    L.push(`ND: ${fmtND(S.nd)}`);
+    L.push(`Dificuldade: ${P.difLabel || dif.nome}`);
+    L.push(`XP: ${1000 * S.nd} + ${dif.pct * 100}% dos Monstros`);
+    L.push(`Gold: ${ts != null && isFinite(ts) ? fmtNum(ts) : '?'}`);
+  }
+  L.push('');
+  L.push(`Vagas: 0/${P.vagas || '?'}`);
+  L.push('');
+  L.push(' ');
+  L.push('');
+  L.push('Regras Utilizadas:');
+  L.push('');
+  const regras = (P.regras || '').split('\n').map(s => s.trim()).filter(Boolean);
+  if (regras.length) regras.forEach(r => L.push(`* ${r}`));
+  else L.push('*');
+  return L.join('\n');
+}
+
+function resumoTexto() {
+  const dif = DIFICULDADES[S.dif];
+  const linhas = [];
+  if (dif.offset === null) {
+    linhas.push(`**Missão Sem ND (?)** — nível ${S.nivel}`);
+    linhas.push(`Recompensa: ${fmtNum(S.nivel * 1000 / 3)} XP + 1/3 do tesouro médio + 0,5 PeA`);
+    return linhas.join('\n');
+  }
+  const alvo = S.nd + dif.offset;
+  linhas.push(`**Missão ND ${fmtND(S.nd)} — ${dif.nome}** (encontros ND ${fmtND(alvo)})`);
+  for (const e of S.encontros) {
+    const r = calcularND(e.ameacas.filter(a => a.tipo === 'criatura'), S.sobras);
+    const lista = e.ameacas.filter(a => a.qtd > 0).map(a => `${a.qtd}× ${a.nome || TIPOS[a.tipo]} (ND ${fmtND(a.nd)}${a.chefe ? ', chefe' : ''})`).join(', ');
+    linhas.push(`• ${e.nome}: ${r ? 'ND ' + fmtND(r.nd) : 'sem criaturas'} — ${lista || 'vazio'}`);
+  }
+  const total = S.encontros.reduce((s, e) => s + xpAmeacas(e), 0);
+  const tsTabela = DINHEIRO_MEDIO[S.nd];
+  const ts = S.ts !== '' ? +S.ts : tsTabela;
+  linhas.push(`Sucesso: ${fmtNum(1000 * S.nd + total * dif.pct)} XP${ts != null ? ` + T$ ${fmtNum(ts)}` : ''} + 0,5 PeA`);
+  linhas.push(`Falha: ${fmtNum(500 * S.nd + total * PCT_FALHA)} XP`);
+  return linhas.join('\n');
+}
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1600);
+}
+async function copiar(txt, msg) {
+  try { await navigator.clipboard.writeText(txt); toast(msg); }
+  catch (e) { prompt('Copie:', txt); }
+}
+
+/* ===== Eventos ===== */
+$('#m-dif').addEventListener('change', e => { S.dif = e.target.value; atualizar(); });
+$('#m-nd').addEventListener('change', e => { S.nd = ndValue(e.target.value); atualizar(); });
+$('#m-nivel').addEventListener('change', e => { S.nivel = +e.target.value; atualizar(); });
+$('#m-ts').addEventListener('input', e => { S.ts = e.target.value; atualizar(); });
+$('#o-sobras').addEventListener('change', e => { S.sobras = e.target.value; atualizar(); });
+$('#btn-add-enc').addEventListener('click', () => { S.encontros.push(novoEncontro(S.encontros.length + 1)); montarEncontros(); });
+$('#btn-copy').addEventListener('click', () => copiar(resumoTexto(), 'Resumo copiado'));
+$('#btn-post').addEventListener('click', () => copiar(postagemTexto(), 'Postagem copiada'));
+document.querySelectorAll('[data-p]').forEach(el => el.addEventListener('input', () => {
+  S.post[el.dataset.p] = el.type === 'number' ? (parseInt(el.value, 10) || '') : el.value;
+  atualizar();
+}));
+$('#btn-link').addEventListener('click', () => copiar(linkEstado(), 'Link copiado'));
+$('#btn-reset').addEventListener('click', () => {
+  if (!confirm('Limpar todos os encontros?')) return;
+  S = estadoPadrao(); history.replaceState(null, '', location.pathname + location.search);
+  montarMissao(); montarEncontros();
+});
+$('#btn-theme').addEventListener('click', () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+  try { localStorage.setItem('tempest-tema', root.dataset.theme); } catch (e) {}
+});
+try { const t = localStorage.getItem('tempest-tema'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+
+const box = $('#encounters');
+function alvoDe(el) {
+  const enc = el.closest('[data-ei]'); const th = el.closest('[data-ai]');
+  return { e: enc && S.encontros[+enc.dataset.ei], ei: enc && +enc.dataset.ei, a: th && S.encontros[+enc.dataset.ei].ameacas[+th.dataset.ai], ai: th && +th.dataset.ai };
+}
+box.addEventListener('input', ev => {
+  const f = ev.target.dataset.f; if (!f) return;
+  const { e, a } = alvoDe(ev.target);
+  if (f === 'enc-nome') e.nome = ev.target.value;
+  else if (f === 'nome') a.nome = ev.target.value;
+  else if (f === 'qtd') a.qtd = Math.max(0, Math.floor(+ev.target.value || 0));
+  else return;
+  atualizar();
+});
+box.addEventListener('change', ev => {
+  const f = ev.target.dataset.f; if (!f) return;
+  const { a } = alvoDe(ev.target);
+  if (f === 'nd') a.nd = ndValue(ev.target.value);
+  else if (f === 'chefe') a.chefe = ev.target.checked;
+  else if (f === 'tipo') { a.tipo = ev.target.value; if (a.tipo !== 'criatura') a.chefe = false; montarEncontros(); return; }
+  else return;
+  atualizar();
+});
+box.addEventListener('click', ev => {
+  const btn = ev.target.closest('[data-act]'); if (!btn) return;
+  const { e, ei, ai } = alvoDe(btn);
+  if (btn.dataset.act === 'add-ameaca') e.ameacas.push(novaAmeaca(btn.dataset.tipo));
+  else if (btn.dataset.act === 'del-ameaca') e.ameacas.splice(ai, 1);
+  else if (btn.dataset.act === 'del-enc') S.encontros.splice(ei, 1);
+  montarEncontros();
+});
+
+montarMissao();
+montarEncontros();
+</script>
+</body>
+</html>
