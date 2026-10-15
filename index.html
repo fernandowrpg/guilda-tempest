@@ -331,6 +331,10 @@ body.travada .switch{cursor:not-allowed}
 .val-alerta,.val-ok{margin:6px 0 2px;padding:8px 10px;border-radius:10px;font-size:.85rem;font-weight:700}
 .val-alerta{background:var(--bad-soft);color:var(--bad)}
 .val-ok{background:var(--ok-soft);color:var(--ok)}
+.val-warn{margin:6px 0 2px;padding:8px 10px;border-radius:10px;font-size:.85rem;font-weight:700;background:var(--warn-soft);color:var(--warn)}
+.val-passos{margin-top:6px;font-size:.85rem}
+.val-passos summary{font-weight:600;color:var(--muted);cursor:pointer}
+.target .pill{margin-left:4px}
 .kv .pill{margin-left:6px;vertical-align:1px}
 .mbar .alvo{font-weight:500;color:var(--muted);font-size:.85em}
 .mbar .m.alerta b{color:var(--bad)}
@@ -550,6 +554,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px}
           <li>Se depois de juntar os grupos aparecerem NDs iguais de novo, eles são juntados outra vez.</li>
           <li><b>Chefe Final:</b> +2 de ND só para a dificuldade (o XP usa o ND real).</li>
           <li>Resultado final sempre arredondado para baixo.</li>
+          <li><b>ND da missão:</b> junta as criaturas de todos os encontros realizados e aplica as mesmas regras (ex.: dois encontros com 1× ND 6 cada = 2× ND 6 = ND 8). Esse é o ND comparado com o alvo.</li>
           <li>Só <b>criaturas</b> entram no ND do encontro. Armadilhas e perigos complexos entram só no XP.</li>
           <li><b>XP de cada ameaça</b> = 1000 × ND (ND 1/2 = 500).</li>
           <li><b>Sucesso:</b> 1000 × ND da missão + % da dificuldade sobre o XP das ameaças, e 0,5 PeA.</li>
@@ -886,28 +891,31 @@ function tesAmeacas(e) {
 }
 
 // Valida o ND de cada encontro realizado contra o ND alvo da missão
+// ND da missão: junta as criaturas de todos os encontros realizados e aplica as regras de ND
 function validarEncontros() {
   const dif = DIFICULDADES[S.dif];
   if (dif.offset === null) return null;
   const alvo = r4(S.nd + dif.offset);
-  const itens = S.encontros.filter(e => e.feito !== false).map(e => {
+  const encs = S.encontros.filter(e => e.feito !== false);
+  const itens = encs.map(e => {
     const r = calcularND(e.ameacas.filter(a => a.tipo === 'criatura'), S.sobras);
-    const nd = r ? r.nd : null;
-    const status = nd == null ? 'vazio' : r4(nd) === alvo ? 'ok' : nd < alvo ? 'abaixo' : 'acima';
-    return { nome: e.nome, nd, status };
+    return { nome: e.nome, nd: r ? r.nd : null };
   });
-  const nds = itens.filter(i => i.nd != null).map(i => i.nd);
-  return { alvo, itens, max: nds.length ? Math.max(...nds) : null, acima: itens.filter(i => i.status === 'acima') };
+  const total = calcularND(encs.flatMap(e => e.ameacas.filter(a => a.tipo === 'criatura')), S.sobras);
+  const nd = total ? total.nd : null;
+  const status = nd == null ? 'vazio' : r4(nd) === alvo ? 'ok' : nd < alvo ? 'abaixo' : 'acima';
+  return { alvo, itens, nd, passos: total ? total.passos : [], status, acima: status === 'acima' };
 }
-const STATUS_VAL = { ok: ['ok', 'No alvo'], abaixo: ['warn', 'Abaixo'], acima: ['bad', 'Acima'], vazio: ['', 'Sem criaturas'] };
+const STATUS_VAL = { ok: ['ok', 'No alvo'], abaixo: ['warn', 'Abaixo do alvo'], acima: ['bad', 'Acima do alvo'], vazio: ['', 'Sem criaturas'] };
 function htmlValidacao(v, titulo = true) {
-  if (!v) return '';
-  const cab = v.acima.length
-    ? `<div class="val-alerta">⚠️ ${v.acima.length} encontro${v.acima.length > 1 ? 's' : ''} acima do ND ${fmtND(v.alvo)}</div>`
-    : v.itens.length ? `<div class="val-ok">✓ Nenhum encontro acima do ND ${fmtND(v.alvo)}</div>` : '';
-  return `${titulo ? '<div class="section-title">Validação dos encontros</div>' : ''}${cab}
-    ${v.itens.map(i => `<div class="kv"><span>${esc(i.nome)}</span><strong>${i.nd != null ? 'ND ' + fmtND(i.nd) + ' ' : ''}<span class="pill ${STATUS_VAL[i.status][0]}">${STATUS_VAL[i.status][1]}</span></strong></div>`).join('')
-      || '<p class="note">Nenhum encontro realizado.</p>'}`;
+  if (!v || v.status === undefined) return '';
+  const cls = { ok: 'val-ok', abaixo: 'val-warn', acima: 'val-alerta', vazio: 'val-warn' }[v.status];
+  const icone = { ok: '✓', abaixo: '↓', acima: '⚠️', vazio: '—' }[v.status];
+  return `${titulo ? '<div class="section-title">ND da missão</div>' : ''}
+    <div class="${cls}">${icone} ND ${v.nd != null ? fmtND(v.nd) : '—'} · ${STATUS_VAL[v.status][1]} (ND ${fmtND(v.alvo)})</div>
+    ${v.itens.map(i => `<div class="kv"><span>${esc(i.nome)}</span><strong>${i.nd != null ? 'ND ' + fmtND(i.nd) : 'sem criaturas'}</strong></div>`).join('')
+      || '<p class="note">Nenhum encontro realizado.</p>'}
+    ${v.passos.length ? `<details class="val-passos"><summary>Como chegou no ND ${fmtND(v.nd)}</summary><ol class="steps">${v.passos.map(p => `<li>${esc(p)}</li>`).join('')}</ol></details>` : ''}`;
 }
 
 // Recompensas da missão com ND: total da sessão e divisão pelos jogadores (como o mission_t20).
@@ -936,7 +944,11 @@ function atualizar() {
   $('#f-nivel').classList.toggle('hidden', !semND);
   $('#m-target').innerHTML = semND
     ? `<span class="tnd">?</span><span>Missão sem ND: sem dificuldade. Recompensa = 1/3 do XP do nível e 1/3 da recompensa média do nível.</span>`
-    : `<span class="tnd">ND ${fmtND(alvo)}</span><span>é o ND que os encontros devem ter (missão ND ${fmtND(S.nd)}${dif.offset ? ' +' + dif.offset : ''}). XP das ameaças: <b>${dif.pct * 100}%</b>.</span>`;
+    : (() => {
+        const V = validarEncontros();
+        const atual = V.nd != null ? `<span class="pill ${STATUS_VAL[V.status][0]}">Atual: ND ${fmtND(V.nd)} · ${STATUS_VAL[V.status][1]}</span>` : '';
+        return `<span class="tnd">ND ${fmtND(alvo)}</span><span>é o ND alvo da missão (ND ${fmtND(S.nd)}${dif.offset ? ' +' + dif.offset : ''}), somando as criaturas de todos os encontros. XP das ameaças: <b>${dif.pct * 100}%</b>. ${atual}</span>`;
+      })();
   const tsTabela = dinheiroMedio(semND ? S.nivel : S.nd);
   $('#m-ts').placeholder = tsTabela != null ? `tabela: ${fmtNum(tsTabela)}` : 'preencher';
 
@@ -949,9 +961,8 @@ function atualizar() {
     const xp = xpAmeacas(e);
     let pill = '', cls = '';
     if (r && alvo != null) {
-      if (r4(r.nd) === alvo) { cls = 'ok'; pill = `<span class="pill ok">No alvo · ND ${fmtND(alvo)}</span>`; }
-      else if (r.nd < alvo) { cls = 'warn'; pill = `<span class="pill warn">Abaixo do alvo · ND ${fmtND(alvo)}</span>`; }
-      else { cls = 'bad'; pill = `<span class="pill bad">Acima do alvo · ND ${fmtND(alvo)}</span>`; }
+      if (r.nd > alvo) { cls = 'bad'; pill = `<span class="pill bad">Sozinho já passa do alvo · ND ${fmtND(alvo)}</span>`; }
+      else pill = `<span class="pill">ND do encontro · soma no ND da missão</span>`;
     }
     el.className = 'result ' + cls;
     el.innerHTML = `
@@ -989,7 +1000,7 @@ function atualizar() {
         <div class="stat"><small>T$ / jogador</small><b>${fmtNum(R.ts.porJog)}</b></div>
       </div>
       <div class="kv"><span>Missão</span><strong>ND ${fmtND(S.nd)} · ${dif.nome}</strong></div>
-      <div class="kv"><span>ND dos encontros</span><strong>${fmtND(alvo)}</strong></div>
+      <div class="kv"><span>ND alvo</span><strong>${fmtND(alvo)}</strong></div>
       <div class="kv"><span>XP bruto das ameaças</span><strong>${fmtNum(R.xpBruto)}</strong></div>
       ${htmlValidacao(validarEncontros())}
       <div class="section-title ok">Sucesso</div>
@@ -1009,7 +1020,7 @@ function atualizar() {
       <div class="kv"><span>XP total da sessão</span><strong>${fmtNum(R.falha.total)}</strong></div>
       <div class="kv total"><span>XP por jogador (${div})</span><strong>${fmtNum(R.falha.porJog)}</strong></div>`;
     const V = validarEncontros();
-    mbar = `<div class="m${V.acima.length ? ' alerta' : ''}"><small>ND máx/alvo</small><b>${V.max != null ? fmtND(V.max) : '—'}<span class="alvo">/${fmtND(alvo)}</span>${V.acima.length ? ' ⚠️' : ''}</b></div><div class="m xp"><small>XP/jog.</small><b>${fmtNum(R.ok.porJog)}</b></div><div class="m"><small>T$/jog.</small><b>${fmtNum(R.ts.porJog)}</b></div>`;
+    mbar = `<div class="m${V.acima ? ' alerta' : ''}"><small>ND missão/alvo</small><b>${V.nd != null ? fmtND(V.nd) : '—'}<span class="alvo">/${fmtND(alvo)}</span>${V.acima ? ' ⚠️' : ''}</b></div><div class="m xp"><small>XP/jog.</small><b>${fmtNum(R.ok.porJog)}</b></div><div class="m"><small>T$/jog.</small><b>${fmtNum(R.ts.porJog)}</b></div>`;
   }
   $('#f-jog').classList.toggle('hidden', semND);
   $('#summary').innerHTML = html + `<p class="note">${semND ? 'Valores por personagem.' : 'Personagens que morrem sem expectativa de reviver não entram no cálculo do grupo: diminua o número de jogadores.'}</p>`;
@@ -1069,7 +1080,7 @@ function resumoTexto() {
     return linhas.join('\n');
   }
   const alvo = S.nd + dif.offset;
-  linhas.push(`**Missão ND ${fmtND(S.nd)} — ${dif.nome}** (encontros ND ${fmtND(alvo)})`);
+  linhas.push(`**Missão ND ${fmtND(S.nd)} — ${dif.nome}** (ND alvo ${fmtND(alvo)})`);
   for (const e of S.encontros) {
     const r = calcularND(e.ameacas.filter(a => a.tipo === 'criatura'), S.sobras);
     const lista = e.ameacas.filter(a => a.qtd > 0).map(a => `${a.qtd}× ${a.nome || TIPOS[a.tipo]} (ND ${fmtND(a.nd)}${a.chefe ? ', chefe' : ''})`).join(', ');
@@ -1475,7 +1486,7 @@ const fx = $('#fechar');
 fx.addEventListener('change', e => {
   const t = e.target;
   if (t.name === 'fx-res') { S.fech.resultado = t.value; renderFechamento(true); salvar(); $(t.value === 'falha' ? '#fx-bad' : '#fx-ok').focus(); }
-  else if (t.dataset.feito != null) { S.encontros[+t.dataset.feito].feito = t.checked; salvar(); renderFechamento(); }
+  else if (t.dataset.feito != null) { S.encontros[+t.dataset.feito].feito = t.checked; atualizar(); }
 });
 fx.addEventListener('input', e => {
   if (e.target.id === 'fx-jog') S.fech.jogadores = e.target.value;
@@ -1490,8 +1501,8 @@ fx.addEventListener('click', e => {
     const r = calcularFinal();
     const msg = r.semND ? `Fechar "${S.nome}"?` : `Fechar "${S.nome}" como ${r.resultado.toUpperCase()}?\n${fmtNum(r.xpPorJog)} XP e T$ ${fmtNum(r.tsPorJog)} por jogador.\n\nA missão ficará bloqueada para edição.`;
     const V = validarEncontros();
-    const aviso = V && V.acima.length
-      ? `⚠️ ATENÇÃO: ${V.acima.length} encontro${V.acima.length > 1 ? 's estão' : ' está'} acima do ND ${fmtND(V.alvo)} da missão:\n${V.acima.map(i => `• ${i.nome}: ND ${fmtND(i.nd)}`).join('\n')}\n\n`
+    const aviso = V && V.acima
+      ? `⚠️ ATENÇÃO: o ND da missão ficou ${fmtND(V.nd)}, acima do alvo ND ${fmtND(V.alvo)}.\n${V.itens.map(i => `• ${i.nome}: ND ${i.nd != null ? fmtND(i.nd) : '—'}`).join('\n')}\n\n`
       : '';
     if (!confirm(aviso + msg)) return;
     S.fechada = { ...r, data: Date.now(), obs: S.fech.obs || '', validacao: V };
