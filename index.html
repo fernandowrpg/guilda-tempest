@@ -353,6 +353,12 @@ body.travada .switch{cursor:not-allowed}
 .calc-wrap{margin-top:8px;font-size:.85rem}
 .calc-wrap > summary,.val-passos > summary{font-weight:600;color:var(--accent);cursor:pointer}
 
+/* ---------- Tabela de tesouro ---------- */
+.tab-tesouro{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px;margin:6px 0 4px;font-size:.88rem}
+.tab-tesouro .kv span{color:var(--muted)}
+.tab-tesouro .kv strong{color:var(--ink)}
+@media (min-width:700px){.tab-tesouro{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
 /* ---------- Fechamento ---------- */
 .res-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .res-pick input{position:absolute;opacity:0;pointer-events:none}
@@ -563,7 +569,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px}
         <ul>
           <li><b>ND menor que 1</b> (<i>Ameaças de Arton</i>, p. 9): some o ND de todas essas criaturas; cada ponto inteiro vira uma criatura de ND 1 e o resto vira uma criatura com o ND da fração (ex.: 8× ND 1/2 = 4× ND 1).</li>
           <li><b>Criaturas de ND igual</b> contam como uma só: +2 no ND cada vez que a quantidade dobra (1→ND, 2→+2, 4→+4, 8→+6…).</li>
-          <li><b>Tabela de tesouro:</b> “Dinheiro Médio por cena” (ND 1 = 300 … ND 20 = 72.000). Valores com fração são arredondados para cima.</li>
+          <li><b>Tesouro:</b> Tabela 8-6 “Tesouro Médio por Cena” (abaixo). Missões usam o ND da missão; o tesouro das criaturas usa o ND de cada uma; missões sem ND usam o nível. Valores com fração são arredondados para cima.</li>
           <li><b>Sobras</b> (ex.: 3 criaturas = 2 + 1): por padrão, a que sobra vira um grupo próprio e entra na etapa seguinte. Dá para trocar abaixo.</li>
           <li><b>Criaturas de ND diferente:</b> maior ND, +1 para cada uma 1 ND abaixo, +0,5 para 2 abaixo, +0,25 para 3 abaixo; 4 ou mais abaixo não contam. Diferenças fracionadas arredondam para cima.</li>
           <li>Se depois de juntar os grupos aparecerem NDs iguais de novo, eles são juntados outra vez.</li>
@@ -576,9 +582,11 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px}
           <li><b>Tesouro:</b> tesouro da missão (tabela pelo ND da missão) + tesouro de cada criatura (tabela pelo ND dela × nenhum, metade, padrão ou dobro).</li>
           <li><b>Divisão:</b> o XP e o T$ totais da sessão são divididos pelo número de jogadores (arredondando para cima).</li>
           <li><b>Falha:</b> 500 × ND da missão + 20% do XP de cada ameaça enfrentada.</li>
-          <li><b>Sem ND:</b> 1/3 do XP do nível (nível × 1000) e 1/3 da recompensa média do nível.</li>
+          <li><b>Sem ND:</b> 1/3 do XP do nível (nível × 1000) e 1/3 do tesouro médio por cena do nível.</li>
         </ul>
-        <label for="o-sobras">Sobras ao dobrar</label>
+        <div class="section-title">Tabela 8-6 · Tesouro Médio por Cena</div>
+        <div class="tab-tesouro" id="tab-tesouro"></div>
+        <label for="o-sobras" style="margin-top:14px">Sobras ao dobrar</label>
         <select id="o-sobras" style="max-width:340px">
           <option value="decompor">Contar a sobra como grupo separado</option>
           <option value="ignorar">Ignorar sobras</option>
@@ -610,7 +618,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px}
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-/* ===== Tabela "Dinheiro Médio por cena" (ND/nível → T$) ===== */
+/* ===== Tabela 8-6: Tesouro Médio por Cena (ND/nível → T$) ===== */
 const DINHEIRO_MEDIO = {
   1: 300, 2: 300, 3: 400, 4: 1000, 5: 1000,
   6: 2000, 7: 2000, 8: 3000, 9: 3000, 10: 6000,
@@ -997,7 +1005,7 @@ function atualizar() {
   $('#f-nd').classList.toggle('hidden', semND);
   $('#f-nivel').classList.toggle('hidden', !semND);
   $('#m-target').innerHTML = semND
-    ? `<span class="tnd">?</span><span>Missão sem ND: sem dificuldade. Recompensa = 1/3 do XP do nível e 1/3 da recompensa média do nível.</span>`
+    ? `<span class="tnd">?</span><span>Missão sem ND: sem dificuldade. Recompensa = 1/3 do XP do nível e 1/3 do tesouro médio por cena do nível.</span>`
     : (() => {
         const V = validarEncontros();
         const atual = V.nd != null ? `<span class="pill ${STATUS_VAL[V.status][0]}">Atual: ND ${fmtND(V.nd)} · ${STATUS_VAL[V.status][1]}</span>` : '';
@@ -1106,7 +1114,7 @@ function postagemTexto() {
     L.push('ND: ?');
     L.push(`Dificuldade: ${P.difLabel || 'Sem ND'}`);
     L.push(`XP: 1/3 do XP do nível`);
-    L.push(`Gold: 1/3 da recompensa média do nível`);
+    L.push(`Gold: 1/3 do tesouro médio por cena do nível`);
   } else {
     L.push(`ND: ${fmtND(S.nd)}`);
     L.push(`Dificuldade: ${P.difLabel || dif.nome}`);
@@ -1720,6 +1728,7 @@ $('#imp-colar').addEventListener('click', () => {
 });
 dlg.addEventListener('click', e => { if (e.target === dlg || e.target.closest('[data-fechar]')) dlg.close(); });
 
+$('#tab-tesouro').innerHTML = Object.entries(DINHEIRO_MEDIO).map(([n, t]) => `<div class="kv"><span>${n}º</span><strong>T$ ${fmtNum(t)}</strong></div>`).join('');
 $('#ms-nome').value = S.nome || '';
 listarMissoes();
 montarMissao();
