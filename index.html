@@ -159,7 +159,8 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .enc-top input:hover{border-color:var(--line)}
 .enc-body{padding:6px 18px 18px}
 
-.thead,.threat{display:grid;grid-template-columns:150px minmax(0,1fr) 92px 118px 92px 36px;gap:10px;align-items:center}
+.enc-body{container-type:inline-size}
+.thead,.threat{display:grid;grid-template-columns:132px minmax(0,1fr) 84px 112px 108px 86px 36px;gap:8px;align-items:center}
 .thead{padding:10px 0 6px;font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
 .threat{position:relative;padding:10px 0 10px 12px;border-top:1px solid var(--line)}
 .threat::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:3px;background:var(--tc,var(--c-criatura))}
@@ -188,18 +189,19 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .add-row .btn{flex:1 1 auto}
 .add-row .dot{width:8px;height:8px;border-radius:50%;background:var(--tc)}
 
-@media (max-width:700px){
+@container (max-width:660px){
   .thead{display:none}
   .threat{
     grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px;
-    grid-template-areas:"nome nome del" "tipo nd nd" "qtd chefe chefe";
+    grid-template-areas:"nome nome del" "tipo nd nd" "qtd tes tes" "chefe chefe chefe";
     gap:10px;padding:14px 0 14px 14px;
   }
   .threat .lbl{display:block;margin-bottom:4px}
   .t-nome{grid-area:nome}
   .t-del{grid-area:del;justify-self:end;align-self:start}
-  .t-tipo{grid-area:tipo}.t-nd{grid-area:nd}.t-qtd{grid-area:qtd}
-  .t-chefe{grid-area:chefe;align-self:end;height:42px;display:flex;align-items:center}
+  .t-tipo{grid-area:tipo}.t-nd{grid-area:nd}.t-qtd{grid-area:qtd}.t-tes{grid-area:tes}
+  .t-chefe{grid-area:chefe}
+  .t-chefe:has(.na){display:none}
 }
 
 .result{margin-top:14px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:start;
@@ -345,6 +347,10 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px}
             <label for="m-nivel">Nível do personagem</label>
             <select id="m-nivel"></select>
           </div>
+          <div id="f-jog">
+            <label for="m-jog">Jogadores</label>
+            <input id="m-jog" type="number" min="1" step="1" inputmode="numeric">
+          </div>
           <div>
             <label for="m-ts">T$ base (opcional)</label>
             <input id="m-ts" type="number" min="0" step="1" inputmode="numeric" placeholder="da tabela">
@@ -404,8 +410,9 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px}
       <summary><span class="card-title"><span class="ico"><svg><use href="#i-book"/></svg></span>Regras usadas no cálculo</span><svg class="chev" width="18" height="18"><use href="#i-chev"/></svg></summary>
       <div class="rules">
         <ul>
-          <li><b>Criaturas de ND igual</b> contam como uma só. ND &lt; 1: some os NDs. ND ≥ 1: +2 no ND cada vez que a quantidade dobra (1→ND, 2→+2, 4→+4, 8→+6…).</li>
-          <li><b>Tesouro:</b> tabela “Dinheiro Médio por cena” (ND 1 = 300 … ND 20 = 72.000). Valores com fração são arredondados para cima.</li>
+          <li><b>ND menor que 1</b> (<i>Ameaças de Arton</i>, p. 9): some o ND de todas essas criaturas; cada ponto inteiro vira uma criatura de ND 1 e o resto vira uma criatura com o ND da fração (ex.: 8× ND 1/2 = 4× ND 1).</li>
+          <li><b>Criaturas de ND igual</b> contam como uma só: +2 no ND cada vez que a quantidade dobra (1→ND, 2→+2, 4→+4, 8→+6…).</li>
+          <li><b>Tabela de tesouro:</b> “Dinheiro Médio por cena” (ND 1 = 300 … ND 20 = 72.000). Valores com fração são arredondados para cima.</li>
           <li><b>Sobras</b> (ex.: 3 criaturas = 2 + 1): por padrão, a que sobra vira um grupo próprio e entra na etapa seguinte. Dá para trocar abaixo.</li>
           <li><b>Criaturas de ND diferente:</b> maior ND, +1 para cada uma 1 ND abaixo, +0,5 para 2 abaixo, +0,25 para 3 abaixo; 4 ou mais abaixo não contam. Diferenças fracionadas arredondam para cima.</li>
           <li>Se depois de juntar os grupos aparecerem NDs iguais de novo, eles são juntados outra vez.</li>
@@ -413,7 +420,9 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px}
           <li>Resultado final sempre arredondado para baixo.</li>
           <li>Só <b>criaturas</b> entram no ND do encontro. Armadilhas e perigos complexos entram só no XP.</li>
           <li><b>XP de cada ameaça</b> = 1000 × ND (ND 1/2 = 500).</li>
-          <li><b>Sucesso:</b> 1000 × ND da missão + % da dificuldade sobre o XP das ameaças. T$ da tabela “Dinheiro Médio por cena” e 0,5 PeA.</li>
+          <li><b>Sucesso:</b> 1000 × ND da missão + % da dificuldade sobre o XP das ameaças, e 0,5 PeA.</li>
+          <li><b>Tesouro:</b> tesouro da missão (tabela pelo ND da missão) + tesouro de cada criatura (tabela pelo ND dela × nenhum, metade, padrão ou dobro).</li>
+          <li><b>Divisão:</b> o XP e o T$ totais da sessão são divididos pelo número de jogadores (arredondando para cima).</li>
           <li><b>Falha:</b> 500 × ND da missão + 20% do XP de cada ameaça enfrentada.</li>
           <li><b>Sem ND:</b> 1/3 do XP do nível (nível × 1000) e 1/3 da recompensa média do nível.</li>
         </ul>
@@ -512,6 +521,26 @@ function calcularND(criaturas, sobras) {
     const nd = r4(c.nd + (c.chefe ? 2 : 0));
     grupos.set(nd, (grupos.get(nd) || 0) + c.qtd);
   }
+
+  // ND menor que 1: soma todas as frações e converte em criaturas de ND 1 (+ uma com o resto)
+  let somaFrac = 0;
+  const fracs = [];
+  for (const [nd, qtd] of [...grupos].sort((a, b) => b[0] - a[0])) {
+    if (nd >= 1) continue;
+    somaFrac += nd * qtd;
+    fracs.push(`${qtd}× ND ${fmtND(nd)}`);
+    grupos.delete(nd);
+  }
+  if (somaFrac > 0) {
+    somaFrac = Math.round(somaFrac * 1000) / 1000;
+    const n1 = Math.floor(somaFrac + 1e-9);
+    const resto = Math.round((somaFrac - n1) * 1000) / 1000;
+    if (n1) grupos.set(1, (grupos.get(1) || 0) + n1);
+    if (resto > 0) grupos.set(resto, (grupos.get(resto) || 0) + 1);
+    const vira = [n1 ? `${n1}× ND 1` : '', resto > 0 ? `1× ND ${fmtND(resto)}` : ''].filter(Boolean).join(' + ');
+    passos.push(`ND menor que 1: ${fracs.join(' + ')} = ${fmtND(somaFrac)} → ${vira}`);
+  }
+
   let valores = [];
   const notas1 = [];
   for (const [nd, qtd] of [...grupos].sort((a, b) => b[0] - a[0])) {
@@ -552,10 +581,13 @@ function calcularND(criaturas, sobras) {
 
 /* ===== Estado ===== */
 const STORAGE_KEY = 'tempest-encontros-v1';
-const novaAmeaca = (tipo = 'criatura') => ({ tipo, nome: '', nd: 1, qtd: 1, chefe: false });
+const tesPadrao = tipo => tipo === 'criatura' ? 1 : 0;
+const novaAmeaca = (tipo = 'criatura') => ({ tipo, nome: '', nd: 1, qtd: 1, chefe: false, tes: tesPadrao(tipo) });
+const TESOURO_MULT = { 0: 'Nenhum', 0.5: 'Metade', 1: 'Padrão', 2: 'Dobro' };
+const tesMult = a => a.tes ?? tesPadrao(a.tipo);
 const novoEncontro = n => ({ nome: `Encontro ${n}`, ameacas: [novaAmeaca()] });
 const postPadrao = () => ({ local: '', objetivo: '', contratante: '', data: '', vagas: 4, difLabel: '', resumo: '', regras: '' });
-const estadoPadrao = () => ({ dif: 'normal', nd: 4, nivel: 5, ts: '', sobras: 'decompor', post: postPadrao(), encontros: [novoEncontro(1)] });
+const estadoPadrao = () => ({ dif: 'normal', nd: 4, nivel: 5, ts: '', jogadores: 4, sobras: 'decompor', post: postPadrao(), encontros: [novoEncontro(1)] });
 
 function carregar() {
   try {
@@ -588,6 +620,7 @@ function montarMissao() {
   $('#m-nd').innerHTML = ndOptionsHTML(S.nd);
   $('#m-nivel').innerHTML = Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}"${i + 1 === +S.nivel ? ' selected' : ''}>${i + 1}</option>`).join('');
   $('#m-ts').value = S.ts;
+  $('#m-jog').value = S.jogadores;
   $('#o-sobras').value = S.sobras;
   document.querySelectorAll('[data-p]').forEach(el => { el.value = S.post[el.dataset.p] ?? ''; });
 }
@@ -602,7 +635,7 @@ function montarEncontros() {
         <button class="icon-btn" type="button" data-act="del-enc" title="Remover encontro" aria-label="Remover encontro">${icon('i-x')}</button>
       </div>
       <div class="enc-body">
-        ${e.ameacas.length ? '<div class="thead"><span>Tipo</span><span>Nome</span><span>ND</span><span>Qtd</span><span>Chefe</span><span></span></div>' : ''}
+        ${e.ameacas.length ? '<div class="thead"><span>Tipo</span><span>Nome</span><span>ND</span><span>Qtd</span><span>Tesouro</span><span>Chefe</span><span></span></div>' : ''}
         ${e.ameacas.map((a, ai) => `
           <div class="threat" data-ai="${ai}" data-tipo="${a.tipo}">
             <div class="t-tipo"><span class="lbl">Tipo</span><select data-f="tipo" aria-label="Tipo">${Object.entries(TIPOS).map(([k, t]) => `<option value="${k}"${k === a.tipo ? ' selected' : ''}>${t}</option>`).join('')}</select></div>
@@ -615,6 +648,7 @@ function montarEncontros() {
                 <button type="button" data-act="mais" aria-label="Aumentar">+</button>
               </div>
             </div>
+            <div class="t-tes"><span class="lbl">Tesouro</span><select data-f="tes" aria-label="Tesouro">${Object.entries(TESOURO_MULT).map(([k, t]) => `<option value="${k}"${+k === tesMult(a) ? ' selected' : ''}>${t}</option>`).join('')}</select></div>
             <div class="t-chefe">${a.tipo === 'criatura'
               ? `<label class="switch"><input type="checkbox" data-f="chefe"${a.chefe ? ' checked' : ''}><span class="track"></span><span class="txt">Chefe</span></label>`
               : '<span class="na">—</span>'}</div>
@@ -633,6 +667,26 @@ function montarEncontros() {
 
 function xpAmeacas(e) {
   return e.ameacas.reduce((s, a) => s + 1000 * a.nd * Math.max(0, a.qtd), 0);
+}
+function tesAmeacas(e) {
+  return e.ameacas.reduce((s, a) => s + dinheiroMedio(a.nd) * tesMult(a) * Math.max(0, a.qtd), 0);
+}
+
+// Recompensas da missão com ND: total da sessão e divisão pelos jogadores (como o mission_t20).
+function recompensas() {
+  const dif = DIFICULDADES[S.dif];
+  const jog = Math.max(1, +S.jogadores || 1);
+  const xpBruto = S.encontros.reduce((s, e) => s + xpAmeacas(e), 0);
+  const tsTabela = dinheiroMedio(S.nd);
+  const tsBase = S.ts !== '' && S.ts != null && isFinite(+S.ts) ? +S.ts : (tsTabela || 0);
+  const tsCriaturas = S.encontros.reduce((s, e) => s + tesAmeacas(e), 0);
+  const ok = { base: Math.ceil(1000 * S.nd), ameacas: Math.ceil(xpBruto * dif.pct) };
+  const falha = { base: Math.ceil(500 * S.nd), ameacas: Math.ceil(xpBruto * PCT_FALHA) };
+  ok.total = ok.base + ok.ameacas; ok.porJog = Math.ceil(ok.total / jog);
+  falha.total = falha.base + falha.ameacas; falha.porJog = Math.ceil(falha.total / jog);
+  const ts = { base: tsBase, criaturas: tsCriaturas, total: tsBase + tsCriaturas };
+  ts.porJog = Math.ceil(ts.total / jog);
+  return { dif, jog, xpBruto, ok, falha, ts };
 }
 
 function atualizar() {
@@ -667,7 +721,7 @@ function atualizar() {
       <div>
         ${r ? pill : '<span class="pill">Sem criaturas</span>'}
         ${r && r.passos.length ? `<ol class="steps">${r.passos.map(p => `<li>${esc(p)}</li>`).join('')}</ol>` : ''}
-        <div class="meta">XP das ameaças deste encontro: <b>${fmtNum(xp)}</b></div>
+        <div class="meta">XP das ameaças deste encontro: <b>${fmtNum(xp)}</b> · Tesouro das criaturas: <b>T$ ${fmtNum(tesAmeacas(e))}</b></div>
       </div>`;
   });
 
@@ -689,32 +743,36 @@ function atualizar() {
       <div class="kv"><span>PeA</span><strong>0,5</strong></div>`;
     mbar = `<div class="m"><small>Missão</small><b>Sem ND</b></div><div class="m xp"><small>XP</small><b>${fmtNum(xpNivel / 3)}</b></div>`;
   } else {
-    const totalAmeacas = S.encontros.reduce((s, e) => s + xpAmeacas(e), 0);
-    const base = 1000 * S.nd;
-    const extra = totalAmeacas * dif.pct;
-    const baseFalha = 500 * S.nd;
-    const extraFalha = totalAmeacas * PCT_FALHA;
+    const R = recompensas();
+    const div = `÷ ${R.jog} jogador${R.jog > 1 ? 'es' : ''}`;
     html = `
       <div class="reward-hero">
-        <div class="stat xp"><small>XP (sucesso)</small><b>${fmtNum(base + extra)}</b></div>
-        <div class="stat"><small>Tesouro</small><b>${tsVal}</b></div>
+        <div class="stat xp"><small>XP / jogador</small><b>${fmtNum(R.ok.porJog)}</b></div>
+        <div class="stat"><small>T$ / jogador</small><b>${fmtNum(R.ts.porJog)}</b></div>
       </div>
       <div class="kv"><span>Missão</span><strong>ND ${fmtND(S.nd)} · ${dif.nome}</strong></div>
       <div class="kv"><span>ND dos encontros</span><strong>${fmtND(alvo)}</strong></div>
-      <div class="kv"><span>XP total das ameaças</span><strong>${fmtNum(totalAmeacas)}</strong></div>
+      <div class="kv"><span>XP bruto das ameaças</span><strong>${fmtNum(R.xpBruto)}</strong></div>
       <div class="section-title ok">Sucesso</div>
-      <div class="kv"><span>Base (1000 × ${fmtND(S.nd)})</span><strong>${fmtNum(base)}</strong></div>
-      <div class="kv"><span>Ameaças (${dif.pct * 100}%)</span><strong>${fmtNum(extra)}</strong></div>
-      <div class="kv total"><span>XP</span><strong>${fmtNum(base + extra)}</strong></div>
-      <div class="kv"><span>Tesouro</span><strong>${temTs ? tsVal : 'preencha T$ base'}</strong></div>
+      <div class="kv"><span>Base (1000 × ${fmtND(S.nd)})</span><strong>${fmtNum(R.ok.base)}</strong></div>
+      <div class="kv"><span>Ameaças (${dif.pct * 100}%)</span><strong>+ ${fmtNum(R.ok.ameacas)}</strong></div>
+      <div class="kv"><span>XP total da sessão</span><strong>${fmtNum(R.ok.total)}</strong></div>
+      <div class="kv total"><span>XP por jogador (${div})</span><strong>${fmtNum(R.ok.porJog)}</strong></div>
       <div class="kv"><span>PeA</span><strong>0,5</strong></div>
+      <div class="section-title">Tesouro</div>
+      <div class="kv"><span>Base da missão (ND ${fmtND(S.nd)})</span><strong>T$ ${fmtNum(R.ts.base)}</strong></div>
+      <div class="kv"><span>Tesouro das criaturas</span><strong>+ T$ ${fmtNum(R.ts.criaturas)}</strong></div>
+      <div class="kv"><span>Tesouro total da sessão</span><strong>T$ ${fmtNum(R.ts.total)}</strong></div>
+      <div class="kv total"><span>T$ por jogador (${div})</span><strong>T$ ${fmtNum(R.ts.porJog)}</strong></div>
       <div class="section-title bad">Falha</div>
-      <div class="kv"><span>Base (500 × ${fmtND(S.nd)})</span><strong>${fmtNum(baseFalha)}</strong></div>
-      <div class="kv"><span>Ameaças enfrentadas (20%)</span><strong>${fmtNum(extraFalha)}</strong></div>
-      <div class="kv total"><span>XP</span><strong>${fmtNum(baseFalha + extraFalha)}</strong></div>`;
-    mbar = `<div class="m"><small>Alvo</small><b>ND ${fmtND(alvo)}</b></div><div class="m xp"><small>XP</small><b>${fmtNum(base + extra)}</b></div><div class="m"><small>Gold</small><b>${temTs ? fmtNum(ts) : '—'}</b></div>`;
+      <div class="kv"><span>Base (500 × ${fmtND(S.nd)})</span><strong>${fmtNum(R.falha.base)}</strong></div>
+      <div class="kv"><span>Ameaças enfrentadas (20%)</span><strong>+ ${fmtNum(R.falha.ameacas)}</strong></div>
+      <div class="kv"><span>XP total da sessão</span><strong>${fmtNum(R.falha.total)}</strong></div>
+      <div class="kv total"><span>XP por jogador (${div})</span><strong>${fmtNum(R.falha.porJog)}</strong></div>`;
+    mbar = `<div class="m"><small>Alvo</small><b>ND ${fmtND(alvo)}</b></div><div class="m xp"><small>XP/jog.</small><b>${fmtNum(R.ok.porJog)}</b></div><div class="m"><small>T$/jog.</small><b>${fmtNum(R.ts.porJog)}</b></div>`;
   }
-  $('#summary').innerHTML = html + '<p class="note">Personagens que morrem sem expectativa de reviver não entram no cálculo do grupo.</p>';
+  $('#f-jog').classList.toggle('hidden', semND);
+  $('#summary').innerHTML = html + `<p class="note">${semND ? 'Valores por personagem.' : 'Personagens que morrem sem expectativa de reviver não entram no cálculo do grupo: diminua o número de jogadores.'}</p>`;
   $('#mbar').innerHTML = mbar + `<button class="btn primary" type="button" data-go="rewards">Detalhes</button>`;
   $('#p-saida').textContent = postagemTexto();
   salvar();
@@ -773,11 +831,10 @@ function resumoTexto() {
     const lista = e.ameacas.filter(a => a.qtd > 0).map(a => `${a.qtd}× ${a.nome || TIPOS[a.tipo]} (ND ${fmtND(a.nd)}${a.chefe ? ', chefe' : ''})`).join(', ');
     linhas.push(`• ${e.nome}: ${r ? 'ND ' + fmtND(r.nd) : 'sem criaturas'} — ${lista || 'vazio'}`);
   }
-  const total = S.encontros.reduce((s, e) => s + xpAmeacas(e), 0);
-  const tsTabela = dinheiroMedio(S.nd);
-  const ts = S.ts !== '' ? +S.ts : tsTabela;
-  linhas.push(`Sucesso: ${fmtNum(1000 * S.nd + total * dif.pct)} XP${ts != null ? ` + T$ ${fmtNum(ts)}` : ''} + 0,5 PeA`);
-  linhas.push(`Falha: ${fmtNum(500 * S.nd + total * PCT_FALHA)} XP`);
+  const R = recompensas();
+  linhas.push(`Jogadores: ${R.jog}`);
+  linhas.push(`Sucesso: ${fmtNum(R.ok.total)} XP (${fmtNum(R.ok.porJog)} por jogador) + T$ ${fmtNum(R.ts.total)} (T$ ${fmtNum(R.ts.porJog)} por jogador) + 0,5 PeA`);
+  linhas.push(`Falha: ${fmtNum(R.falha.total)} XP (${fmtNum(R.falha.porJog)} por jogador)`);
   return linhas.join('\n');
 }
 
@@ -795,6 +852,7 @@ $('#m-dif').addEventListener('change', e => { if (e.target.name === 'dif') { S.d
 $('#m-nd').addEventListener('change', e => { S.nd = ndValue(e.target.value); atualizar(); });
 $('#m-nivel').addEventListener('change', e => { S.nivel = +e.target.value; atualizar(); });
 $('#m-ts').addEventListener('input', e => { S.ts = e.target.value; atualizar(); });
+$('#m-jog').addEventListener('input', e => { S.jogadores = Math.max(1, parseInt(e.target.value, 10) || 1); atualizar(); });
 $('#o-sobras').addEventListener('change', e => { S.sobras = e.target.value; atualizar(); });
 $('#btn-add-enc').addEventListener('click', () => { S.encontros.push(novoEncontro(S.encontros.length + 1)); montarEncontros(); });
 $('#btn-copy').addEventListener('click', () => copiar(resumoTexto(), 'Resumo copiado'));
@@ -840,7 +898,8 @@ box.addEventListener('change', ev => {
   const { a } = alvoDe(ev.target);
   if (f === 'nd') a.nd = ndValue(ev.target.value);
   else if (f === 'chefe') a.chefe = ev.target.checked;
-  else if (f === 'tipo') { a.tipo = ev.target.value; if (a.tipo !== 'criatura') a.chefe = false; montarEncontros(); return; }
+  else if (f === 'tes') a.tes = parseFloat(ev.target.value);
+  else if (f === 'tipo') { a.tipo = ev.target.value; if (a.tipo !== 'criatura') a.chefe = false; a.tes = tesPadrao(a.tipo); montarEncontros(); return; }
   else return;
   atualizar();
 });
