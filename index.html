@@ -327,6 +327,14 @@ body.travada .switch{cursor:not-allowed}
 .divisor{display:flex;align-items:center;gap:10px;margin:16px 0 12px;color:var(--muted);font-size:.8rem;font-weight:700;text-transform:uppercase}
 .divisor::before,.divisor::after{content:"";flex:1;height:1px;background:var(--line)}
 
+/* ---------- Validação ---------- */
+.val-alerta,.val-ok{margin:6px 0 2px;padding:8px 10px;border-radius:10px;font-size:.85rem;font-weight:700}
+.val-alerta{background:var(--bad-soft);color:var(--bad)}
+.val-ok{background:var(--ok-soft);color:var(--ok)}
+.kv .pill{margin-left:6px;vertical-align:1px}
+.mbar .alvo{font-weight:500;color:var(--muted);font-size:.85em}
+.mbar .m.alerta b{color:var(--bad)}
+
 /* ---------- Fechamento ---------- */
 .res-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .res-pick input{position:absolute;opacity:0;pointer-events:none}
@@ -877,8 +885,33 @@ function tesAmeacas(e) {
   return e.ameacas.reduce((s, a) => s + dinheiroMedio(a.nd) * tesMult(a) * Math.max(0, a.qtd), 0);
 }
 
+// Valida o ND de cada encontro realizado contra o ND alvo da missão
+function validarEncontros() {
+  const dif = DIFICULDADES[S.dif];
+  if (dif.offset === null) return null;
+  const alvo = r4(S.nd + dif.offset);
+  const itens = S.encontros.filter(e => e.feito !== false).map(e => {
+    const r = calcularND(e.ameacas.filter(a => a.tipo === 'criatura'), S.sobras);
+    const nd = r ? r.nd : null;
+    const status = nd == null ? 'vazio' : r4(nd) === alvo ? 'ok' : nd < alvo ? 'abaixo' : 'acima';
+    return { nome: e.nome, nd, status };
+  });
+  const nds = itens.filter(i => i.nd != null).map(i => i.nd);
+  return { alvo, itens, max: nds.length ? Math.max(...nds) : null, acima: itens.filter(i => i.status === 'acima') };
+}
+const STATUS_VAL = { ok: ['ok', 'No alvo'], abaixo: ['warn', 'Abaixo'], acima: ['bad', 'Acima'], vazio: ['', 'Sem criaturas'] };
+function htmlValidacao(v, titulo = true) {
+  if (!v) return '';
+  const cab = v.acima.length
+    ? `<div class="val-alerta">⚠️ ${v.acima.length} encontro${v.acima.length > 1 ? 's' : ''} acima do ND ${fmtND(v.alvo)}</div>`
+    : v.itens.length ? `<div class="val-ok">✓ Nenhum encontro acima do ND ${fmtND(v.alvo)}</div>` : '';
+  return `${titulo ? '<div class="section-title">Validação dos encontros</div>' : ''}${cab}
+    ${v.itens.map(i => `<div class="kv"><span>${esc(i.nome)}</span><strong>${i.nd != null ? 'ND ' + fmtND(i.nd) + ' ' : ''}<span class="pill ${STATUS_VAL[i.status][0]}">${STATUS_VAL[i.status][1]}</span></strong></div>`).join('')
+      || '<p class="note">Nenhum encontro realizado.</p>'}`;
+}
+
 // Recompensas da missão com ND: total da sessão e divisão pelos jogadores (como o mission_t20).
-function recompensas(encs = S.encontros, jogadores = S.jogadores) {
+function recompensas(encs = S.encontros.filter(e => e.feito !== false), jogadores = S.jogadores) {
   const dif = DIFICULDADES[S.dif];
   const jog = Math.max(1, +jogadores || 1);
   const xpBruto = encs.reduce((s, e) => s + xpAmeacas(e), 0);
@@ -926,7 +959,7 @@ function atualizar() {
       <div>
         ${r ? pill : '<span class="pill">Sem criaturas</span>'}
         ${r && r.passos.length ? `<ol class="steps">${r.passos.map(p => `<li>${esc(p)}</li>`).join('')}</ol>` : ''}
-        <div class="meta">XP das ameaças deste encontro: <b>${fmtNum(xp)}</b> · Tesouro das criaturas: <b>T$ ${fmtNum(tesAmeacas(e))}</b></div>
+        <div class="meta">XP das ameaças deste encontro: <b>${fmtNum(xp)}</b> · Tesouro das criaturas: <b>T$ ${fmtNum(tesAmeacas(e))}</b>${e.feito === false ? ' · <b style="color:var(--warn)">Não realizado: fora das recompensas e da validação</b>' : ''}</div>
       </div>`;
   });
 
@@ -958,6 +991,7 @@ function atualizar() {
       <div class="kv"><span>Missão</span><strong>ND ${fmtND(S.nd)} · ${dif.nome}</strong></div>
       <div class="kv"><span>ND dos encontros</span><strong>${fmtND(alvo)}</strong></div>
       <div class="kv"><span>XP bruto das ameaças</span><strong>${fmtNum(R.xpBruto)}</strong></div>
+      ${htmlValidacao(validarEncontros())}
       <div class="section-title ok">Sucesso</div>
       <div class="kv"><span>Base (1000 × ${fmtND(S.nd)})</span><strong>${fmtNum(R.ok.base)}</strong></div>
       <div class="kv"><span>Ameaças (${dif.pct * 100}%)</span><strong>+ ${fmtNum(R.ok.ameacas)}</strong></div>
@@ -974,7 +1008,8 @@ function atualizar() {
       <div class="kv"><span>Ameaças enfrentadas (20%)</span><strong>+ ${fmtNum(R.falha.ameacas)}</strong></div>
       <div class="kv"><span>XP total da sessão</span><strong>${fmtNum(R.falha.total)}</strong></div>
       <div class="kv total"><span>XP por jogador (${div})</span><strong>${fmtNum(R.falha.porJog)}</strong></div>`;
-    mbar = `<div class="m"><small>Alvo</small><b>ND ${fmtND(alvo)}</b></div><div class="m xp"><small>XP/jog.</small><b>${fmtNum(R.ok.porJog)}</b></div><div class="m"><small>T$/jog.</small><b>${fmtNum(R.ts.porJog)}</b></div>`;
+    const V = validarEncontros();
+    mbar = `<div class="m${V.acima.length ? ' alerta' : ''}"><small>ND máx/alvo</small><b>${V.max != null ? fmtND(V.max) : '—'}<span class="alvo">/${fmtND(alvo)}</span>${V.acima.length ? ' ⚠️' : ''}</b></div><div class="m xp"><small>XP/jog.</small><b>${fmtNum(R.ok.porJog)}</b></div><div class="m"><small>T$/jog.</small><b>${fmtNum(R.ts.porJog)}</b></div>`;
   }
   $('#f-jog').classList.toggle('hidden', semND);
   $('#summary').innerHTML = html + `<p class="note">${semND ? 'Valores por personagem.' : 'Personagens que morrem sem expectativa de reviver não entram no cálculo do grupo: diminua o número de jogadores.'}</p>`;
@@ -1398,6 +1433,7 @@ function renderFechamento(forcar) {
     box.innerHTML = head + `
       <div class="fechada-head ${ok ? 'ok' : 'bad'}">${icon('i-lock')}<div>${r.semND ? 'Missão sem ND concluída' : ok ? '✅ Sucesso' : '❌ Falha'}<small>Fechada em ${fmtData(r.data)}</small></div></div>
       ${statsFinal(r)}
+      ${htmlValidacao(r.validacao)}
       ${r.obs ? `<div class="section-title">Observações</div><div class="obs">${esc(r.obs)}</div>` : ''}
       <div class="row-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
         <button class="btn primary" type="button" data-fx="copiar">${icon('i-copy')}Copiar resultado</button>
@@ -1406,7 +1442,7 @@ function renderFechamento(forcar) {
     return;
   }
   // Não redesenha o formulário enquanto o usuário digita nele
-  if (!forcar && box.contains(document.activeElement) && box.querySelector('#fx-prev')) { box.querySelector('#fx-prev').innerHTML = statsFinal(calcularFinal()); return; }
+  if (!forcar && box.contains(document.activeElement) && box.querySelector('#fx-prev')) { box.querySelector('#fx-prev').innerHTML = statsFinal(calcularFinal()) + htmlValidacao(validarEncontros()); return; }
   const semND = DIFICULDADES[S.dif].offset === null;
   const F = S.fech;
   box.innerHTML = head + `
@@ -1429,7 +1465,7 @@ function renderFechamento(forcar) {
       </div>
       <div>
         <span class="lbl">Resultado final</span>
-        <div id="fx-prev">${statsFinal(calcularFinal())}</div>
+        <div id="fx-prev">${statsFinal(calcularFinal())}${htmlValidacao(validarEncontros())}</div>
         ${semND ? '' : `<p class="note">${F.resultado === 'falha' ? 'Falha: 500 × ND + 20% das ameaças enfrentadas. Sem T$ e sem PeA.' : 'Sucesso: 1000 × ND + % da dificuldade, tesouro e 0,5 PeA.'}</p>`}
         <button class="btn primary block" type="button" data-fx="fechar" style="margin-top:14px">${icon('i-lock')}Fechar missão</button>
       </div>
@@ -1453,8 +1489,12 @@ fx.addEventListener('click', e => {
   if (act === 'fechar') {
     const r = calcularFinal();
     const msg = r.semND ? `Fechar "${S.nome}"?` : `Fechar "${S.nome}" como ${r.resultado.toUpperCase()}?\n${fmtNum(r.xpPorJog)} XP e T$ ${fmtNum(r.tsPorJog)} por jogador.\n\nA missão ficará bloqueada para edição.`;
-    if (!confirm(msg)) return;
-    S.fechada = { ...r, data: Date.now(), obs: S.fech.obs || '' };
+    const V = validarEncontros();
+    const aviso = V && V.acima.length
+      ? `⚠️ ATENÇÃO: ${V.acima.length} encontro${V.acima.length > 1 ? 's estão' : ' está'} acima do ND ${fmtND(V.alvo)} da missão:\n${V.acima.map(i => `• ${i.nome}: ND ${fmtND(i.nd)}`).join('\n')}\n\n`
+      : '';
+    if (!confirm(aviso + msg)) return;
+    S.fechada = { ...r, data: Date.now(), obs: S.fech.obs || '', validacao: V };
     atualizar(); aplicarTrava();
     toast('Missão fechada');
   } else if (act === 'desbloquear') {
