@@ -313,6 +313,27 @@ body.travada .switch{cursor:not-allowed}
 .enc-actions .add-enc{margin:0}
 @media (max-width:480px){.enc-actions{grid-template-columns:1fr}}
 .enc-top .icon-btn.neutral:hover{color:var(--accent);background:var(--accent-soft)}
+.enc{container-type:inline-size}
+.enc-acts{display:flex;align-items:center;gap:2px;flex:none}
+.enc-acts .icon-btn{width:34px;height:34px}
+.icon-btn:disabled{opacity:.3;cursor:default;background:transparent !important;color:var(--muted) !important}
+.recolher svg,.mini-btn svg{transition:transform .2s}
+.recolher.fechado svg,.mini-btn.fechado svg{transform:rotate(-90deg)}
+.enc-mini{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;width:100%;padding:10px 18px 12px 58px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:.86rem;text-align:left;cursor:pointer}
+.enc-mini b{color:var(--ink)}
+.enc-mini span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 140px}
+.enc-mini .xp{flex:none}
+.enc-mini:hover b{color:var(--accent)}
+.enc:has(.enc-mini) .enc-top{border-bottom:0;padding-bottom:4px}
+.mini-btn{min-height:32px;padding:4px 10px;font-size:.8rem;color:var(--muted)}
+.mini-btn svg{width:14px;height:14px}
+body.travada [data-act="subir"],body.travada [data-act="descer"]{display:none}
+@container (max-width:520px){
+  .enc-top{flex-wrap:wrap;row-gap:4px}
+  .enc-top input{flex:1 1 calc(100% - 44px)}
+  .enc-acts{margin-left:auto}
+  .enc-mini{padding-left:18px}
+}
 
 /* ---------- Diálogo ---------- */
 .dlg{width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 40px);padding:0;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)}
@@ -450,6 +471,8 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px}
   <symbol id="i-unlock" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 7.5-2"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="m6 15 6-6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
 </svg>
 
@@ -523,7 +546,10 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px}
 
       <div class="card-head" style="margin:4px 2px 12px">
         <h2 class="card-title"><span class="ico"><svg><use href="#i-sword"/></svg></span>Encontros</h2>
-        <span class="step">Passo 2</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn mini-btn" id="btn-min-todos" data-keep type="button"></button>
+          <span class="step">Passo 2</span>
+        </div>
       </div>
       <div id="encounters"></div>
       <div class="enc-actions">
@@ -927,11 +953,17 @@ function montarEncontros() {
       <div class="enc-top">
         <span class="enc-num">${ei + 1}</span>
         <input type="text" data-f="enc-nome" value="${esc(e.nome)}" aria-label="Nome do encontro">
-        <button class="icon-btn neutral" type="button" data-act="exp-enc" data-keep title="Exportar encontro (copia um código)" aria-label="Exportar encontro">${icon('i-out')}</button>
-        <button class="icon-btn neutral" type="button" data-act="dup-enc" title="Duplicar encontro" aria-label="Duplicar encontro">${icon('i-dup')}</button>
-        <button class="icon-btn" type="button" data-act="del-enc" title="Remover encontro" aria-label="Remover encontro">${icon('i-x')}</button>
+        <div class="enc-acts">
+          <button class="icon-btn neutral" type="button" data-act="subir" title="Mover para cima" aria-label="Mover encontro para cima"${ei === 0 ? ' data-off' : ''}>${icon('i-up')}</button>
+          <button class="icon-btn neutral" type="button" data-act="descer" title="Mover para baixo" aria-label="Mover encontro para baixo"${ei === S.encontros.length - 1 ? ' data-off' : ''}>${icon('i-down')}</button>
+          <button class="icon-btn neutral" type="button" data-act="exp-enc" data-keep title="Exportar encontro (copia um código)" aria-label="Exportar encontro">${icon('i-out')}</button>
+          <button class="icon-btn neutral" type="button" data-act="dup-enc" title="Duplicar encontro" aria-label="Duplicar encontro">${icon('i-dup')}</button>
+          <button class="icon-btn" type="button" data-act="del-enc" title="Remover encontro" aria-label="Remover encontro">${icon('i-x')}</button>
+          <button class="icon-btn neutral recolher${e.min ? ' fechado' : ''}" type="button" data-act="min-enc" data-keep title="${e.min ? 'Expandir' : 'Recolher'} encontro" aria-label="${e.min ? 'Expandir' : 'Recolher'} encontro" aria-expanded="${!e.min}">${icon('i-chev')}</button>
+        </div>
       </div>
-      <div class="enc-body">
+      ${e.min ? `<button class="enc-mini" type="button" data-act="min-enc" data-keep data-mini="${ei}"></button>` : ''}
+      <div class="enc-body"${e.min ? ' hidden' : ''}>
         ${e.ameacas.length ? '<div class="thead"><span>Tipo</span><span>Nome</span><span>ND</span><span>Qtd</span><span>Tesouro</span><span>Chefe</span><span></span></div>' : ''}
         ${e.ameacas.map((a, ai) => `
           <div class="threat" data-ai="${ai}" data-tipo="${a.tipo}">
@@ -1052,6 +1084,21 @@ function atualizar() {
       })();
   const tsTabela = dinheiroMedio(semND ? S.nivel : S.nd);
   $('#m-ts').placeholder = tsTabela != null ? `tabela: ${fmtNum(tsTabela)}` : 'preencher';
+
+  // Resumo dos encontros recolhidos
+  document.querySelectorAll('[data-mini]').forEach(el => {
+    const e = S.encontros[+el.dataset.mini];
+    if (!e) return;
+    const r = calcularND(e.ameacas.filter(a => a.tipo === 'criatura'), S.sobras);
+    const n = e.ameacas.filter(a => a.qtd > 0);
+    el.innerHTML = `<b>${r ? 'ND ' + fmtND(r.nd) : 'Sem criaturas'}</b>
+      <span>${n.length ? esc(n.map(a => `${a.qtd}× ${a.nome || TIPOS[a.tipo]}`).join(', ')) : 'sem ameaças'}</span>
+      <span class="xp">${fmtNum(xpAmeacas(e))} XP${e.feito === false ? ' · não realizado' : ''}</span>`;
+  });
+  const todosMin = S.encontros.length && S.encontros.every(e => e.min);
+  $('#btn-min-todos').innerHTML = `${icon('i-chev')}${todosMin ? 'Expandir todos' : 'Recolher todos'}`;
+  $('#btn-min-todos').classList.toggle('fechado', !!todosMin);
+  $('#btn-min-todos').hidden = S.encontros.length < 2;
 
   // Resultado por encontro
   S.encontros.forEach((e, ei) => {
@@ -1432,6 +1479,11 @@ $('#m-nivel').addEventListener('change', e => { S.nivel = +e.target.value; atual
 $('#m-ts').addEventListener('input', e => { S.ts = e.target.value; atualizar(); });
 $('#m-jog').addEventListener('input', e => { S.jogadores = Math.max(1, parseInt(e.target.value, 10) || 1); atualizar(); });
 $('#o-sobras').addEventListener('change', e => { S.sobras = e.target.value; atualizar(); });
+$('#btn-min-todos').addEventListener('click', () => {
+  const recolher = !S.encontros.every(e => e.min);
+  S.encontros.forEach(e => { e.min = recolher; });
+  montarEncontros();
+});
 $('#btn-add-enc').addEventListener('click', () => { S.encontros.push(novoEncontro(S.encontros.length + 1)); montarEncontros(); });
 $('#btn-copy').addEventListener('click', () => copiar(resumoTexto(), 'Resumo copiado'));
 $('#btn-post').addEventListener('click', () => copiar(postagemTexto(), 'Postagem copiada'));
@@ -1490,6 +1542,21 @@ box.addEventListener('click', ev => {
   else if (act === 'del-ameaca') e.ameacas.splice(ai, 1);
   else if (act === 'del-enc') { if (!confirm(`Remover "${e.nome}"?`)) return; S.encontros.splice(ei, 1); }
   else if (act === 'dup-enc') S.encontros.splice(ei + 1, 0, { ...clonar(e), nome: e.nome + ' (cópia)' });
+  else if (act === 'subir' || act === 'descer') {
+    const para = act === 'subir' ? ei - 1 : ei + 1;
+    if (para < 0 || para >= S.encontros.length) return;
+    [S.encontros[ei], S.encontros[para]] = [S.encontros[para], S.encontros[ei]];
+    montarEncontros();
+    const btn2 = document.querySelector(`[data-ei="${para}"] [data-act="${act}"]`);
+    (btn2 && !btn2.hasAttribute('data-off') ? btn2 : document.querySelector(`[data-ei="${para}"] [data-act="min-enc"]`)).focus();
+    return;
+  }
+  else if (act === 'min-enc') {
+    e.min = !e.min;
+    montarEncontros();
+    const b2 = document.querySelector(`[data-ei="${ei}"] .recolher`); if (b2) b2.focus();
+    return;
+  }
   else if (act === 'exp-enc') { copiar(exportarEncontro(e), 'Código do encontro copiado'); return; }
   montarEncontros();
 });
@@ -1502,23 +1569,31 @@ function renderNdMissao() {
   box.classList.remove('hidden');
   const cls = { ok: 'ok', abaixo: 'warn', acima: 'bad' }[V.status] || '';
   box.innerHTML = `
-    <div class="card-head"><h2 class="card-title"><span class="ico">${icon('i-sword')}</span>ND final da missão</h2></div>
+    <div class="card-head"><h2 class="card-title"><span class="ico">${icon('i-sword')}</span>ND final da missão</h2>
+      <button class="btn mini-btn${S.ndMin ? ' fechado' : ''}" type="button" data-keep id="nd-min" aria-expanded="${!S.ndMin}">${icon('i-chev')}${S.ndMin ? 'Ver cálculo' : 'Recolher'}</button></div>
     <div class="result ${cls}" style="margin-top:0">
       <div class="nd-badge"><div><small>ND</small><b>${fmtND(V.nd)}</b></div></div>
       <div>
         <span class="pill ${STATUS_VAL[V.status][0]}">${STATUS_VAL[V.status][1]} · alvo ND ${fmtND(V.alvo)}</span>
-        <p class="meta" style="margin-top:6px">O ND da missão junta as criaturas de todos os encontros realizados e aplica as regras de ND, passo a passo:</p>
+        <p class="meta" style="margin-top:6px">O ND da missão junta as criaturas de todos os encontros realizados e aplica as regras de ND${S.ndMin ? '.' : ', passo a passo:'}</p>
       </div>
     </div>
-    ${htmlPassos(V.passos, 'grande')}`;
+    ${S.ndMin ? '' : htmlPassos(V.passos, 'grande')}`;
 }
+
+$('#nd-missao').addEventListener('click', e => {
+  if (!e.target.closest('#nd-min')) return;
+  S.ndMin = !S.ndMin;
+  renderNdMissao(); salvar();
+  $('#nd-min').focus();
+});
 
 /* ===== Trava de missão fechada ===== */
 function aplicarTrava() {
   const lock = !!S.fechada;
   document.body.classList.toggle('travada', lock);
   document.querySelectorAll('[data-lock]').forEach(sec => sec.querySelectorAll('input, select, textarea, button').forEach(el => {
-    if (!el.closest('[data-keep]') && !el.hasAttribute('data-keep')) el.disabled = lock;
+    if (!el.closest('[data-keep]') && !el.hasAttribute('data-keep')) el.disabled = lock || el.hasAttribute('data-off');
   }));
   if (typeof editores !== 'undefined') editores.forEach(ed => { ed.contentEditable = lock ? 'false' : 'true'; });
   $('#ms-nome').disabled = lock;
