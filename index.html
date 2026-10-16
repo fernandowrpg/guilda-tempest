@@ -390,6 +390,10 @@ body.travada [data-act="subir"],body.travada [data-act="descer"]{display:none}
 @media (max-width:420px){.exp-acts{grid-template-columns:1fr}}
 @media (max-width:760px){.ms-acts{flex-wrap:wrap}.ms-acts .btn{flex:1 1 40%}}
 
+/* ---------- Anotações do encontro ---------- */
+.enc-notas{margin-top:12px}
+.enc-notas textarea{min-height:60px;resize:vertical;overflow-y:auto}
+
 /* ---------- Fechamento ---------- */
 .res-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .res-pick input{position:absolute;opacity:0;pointer-events:none}
@@ -988,11 +992,21 @@ function montarEncontros() {
           <button class="btn" type="button" data-act="add-ameaca" data-tipo="armadilha" style="--tc:var(--c-armadilha)"><span class="dot"></span>Armadilha</button>
           <button class="btn" type="button" data-act="add-ameaca" data-tipo="perigo" style="--tc:var(--c-perigo)"><span class="dot"></span>Perigo complexo</button>
         </div>
+        <div class="enc-notas">
+          <label for="notas-${ei}">📝 Anotações</label>
+          <textarea id="notas-${ei}" data-f="enc-notas" rows="2" placeholder="Táticas, terreno, gatilhos, falas… (aceita **negrito**, *itálico*, - listas)">${esc(e.notas || '')}</textarea>
+        </div>
         <div class="result" data-res="${ei}"></div>
       </div>
     </section>`).join('');
+  box.querySelectorAll('[data-f="enc-notas"]').forEach(autoAltura);
   atualizar();
   aplicarTrava();
+}
+// Faz o campo de anotações crescer com o texto
+function autoAltura(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight + 2, 400) + 'px';
 }
 
 function xpAmeacas(e) {
@@ -1093,7 +1107,7 @@ function atualizar() {
     const n = e.ameacas.filter(a => a.qtd > 0);
     el.innerHTML = `<b>${r ? 'ND ' + fmtND(r.nd) : 'Sem criaturas'}</b>
       <span>${n.length ? esc(n.map(a => `${a.qtd}× ${a.nome || TIPOS[a.tipo]}`).join(', ')) : 'sem ameaças'}</span>
-      <span class="xp">${fmtNum(xpAmeacas(e))} XP${e.feito === false ? ' · não realizado' : ''}</span>`;
+      <span class="xp">${e.notas && e.notas.trim() ? '📝 · ' : ''}${fmtNum(xpAmeacas(e))} XP${e.feito === false ? ' · não realizado' : ''}</span>`;
   });
   const todosMin = S.encontros.length && S.encontros.every(e => e.min);
   $('#btn-min-todos').innerHTML = `${icon('i-chev')}${todosMin ? 'Expandir todos' : 'Recolher todos'}`;
@@ -1267,7 +1281,10 @@ function renderDiscord(txt) {
   return esc(txt).split('\n').map(l => {
     let m;
     if ((m = l.match(RE_TITULO))) return `<div class="ln h${m[1].length}">${inlineMd(m[2])}</div>`;
-    if ((m = l.match(RE_CITA))) return `<div class="ln q">${inlineMd(m[1]) || '&nbsp;'}</div>`;
+    if ((m = l.match(RE_CITA))) {
+      const li = m[1].match(RE_LISTA);
+      return li ? `<div class="ln q"><div class="li">${inlineMd(li[1])}</div></div>` : `<div class="ln q">${inlineMd(m[1]) || '&nbsp;'}</div>`;
+    }
     if ((m = l.match(RE_LISTA))) return `<div class="ln li${/^\s{2,}/.test(l) ? ' li2' : ''}">${inlineMd(m[1])}</div>`;
     return `<div class="ln">${inlineMd(l)}</div>`;
   }).join('');
@@ -1513,6 +1530,7 @@ box.addEventListener('input', ev => {
   const f = ev.target.dataset.f; if (!f) return;
   const { e, a } = alvoDe(ev.target);
   if (f === 'enc-nome') e.nome = ev.target.value;
+  else if (f === 'enc-notas') { e.notas = ev.target.value; autoAltura(ev.target); }
   else if (f === 'nome') a.nome = ev.target.value;
   else if (f === 'qtd') a.qtd = Math.max(0, Math.floor(+ev.target.value || 0));
   else return;
@@ -1807,6 +1825,11 @@ function exportarMissao({ recompensas: comRec = true, calculo = false } = {}) {
     }
     if (!algum) L.push('- Sem ameaças');
     L.push(`- **Total do encontro:** ${fmtNum(xpAmeacas(e))} XP · T$ ${fmtNum(tesAmeacas(e))}`);
+    if (e.notas && e.notas.trim()) {
+      // linha em branco separa da lista; cada linha vira citação (Discord e Notion)
+      L.push('', '**📝 Anotações**');
+      e.notas.trim().split('\n').forEach(l => L.push(`> ${l.trim() ? l : ''}`));
+    }
   });
 
   if (!semND && V && V.nd != null) {
@@ -1869,7 +1892,7 @@ dlgExp.addEventListener('click', e => { if (e.target === dlgExp || e.target.clos
 const clonar = o => JSON.parse(JSON.stringify(o));
 const PREFIXO_ENC = 'TEMPEST-ENC:';
 function exportarEncontro(e) {
-  const dados = { v: 1, nome: e.nome, ameacas: e.ameacas };
+  const dados = { v: 1, nome: e.nome, notas: e.notas || '', ameacas: e.ameacas };
   return PREFIXO_ENC + btoa(unescape(encodeURIComponent(JSON.stringify(dados))));
 }
 function lerEncontro(txt) {
@@ -1884,6 +1907,7 @@ function lerEncontro(txt) {
   const mults = Object.keys(TESOURO_MULT).map(Number);
   return {
     nome: String(d.nome || 'Encontro importado').slice(0, 120),
+    notas: String(d.notas || '').slice(0, 5000),
     ameacas: d.ameacas.map(a => {
       const tipo = TIPOS[a.tipo] ? a.tipo : 'criatura';
       return { tipo, nome: String(a.nome || '').slice(0, 120), nd: ndValue(a.nd), qtd: Math.max(0, Math.floor(+a.qtd || 0)),
@@ -1892,7 +1916,7 @@ function lerEncontro(txt) {
   };
 }
 function adicionarEncontro(e, origem) {
-  S.encontros.push({ nome: e.nome, ameacas: clonar(e.ameacas) });
+  S.encontros.push({ nome: e.nome, notas: e.notas || '', ameacas: clonar(e.ameacas) });
   montarEncontros();
   const novo = document.querySelector(`[data-ei="${S.encontros.length - 1}"]`);
   if (novo) novo.scrollIntoView({ behavior: 'smooth', block: 'center' });
