@@ -886,6 +886,7 @@ let DB = lerDB();
 function gravarDB() {
   try { localStorage.setItem(DB_KEY, JSON.stringify(DB)); } catch (e) {}
 }
+let idVazio = null; // missão vazia criada nesta carga só para ter algo aberto
 function carregar() {
   // migra a missão única da versão anterior
   if (!Object.keys(DB.missoes).length) {
@@ -899,12 +900,12 @@ function carregar() {
     } catch (e) {}
   }
   // link compartilhado: entra como uma missão nova
-  if (location.hash.length > 1) {
+  if (location.hash.length > 1 && !location.hash.startsWith('#z=')) {
     try {
       const s = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));
       if (s && Array.isArray(s.encontros)) {
         const m = normalizar(s);
-        m.id = novoId(); m.nome = (s.nome || 'Missão importada') + ' (link)';
+        m.id = novoId(); m.nome = (s.nome || 'Missão importada').replace(/( \(link\))+$/, '') + ' (link)';
         m.criada = m.atualizada = Date.now();
         DB.missoes[m.id] = m; DB.ativa = m.id;
       }
@@ -914,7 +915,7 @@ function carregar() {
   if (!DB.missoes[DB.ativa]) {
     const ids = Object.keys(DB.missoes);
     if (ids.length) DB.ativa = ids.sort((x, y) => DB.missoes[y].atualizada - DB.missoes[x].atualizada)[0];
-    else { const m = novaMissaoEstado('Missão 1'); DB.missoes[m.id] = m; DB.ativa = m.id; }
+    else { const m = novaMissaoEstado('Missão 1'); DB.missoes[m.id] = m; DB.ativa = m.id; if (location.hash.startsWith('#z=')) idVazio = m.id; }
   }
   gravarDB();
   return normalizar(DB.missoes[DB.ativa]);
@@ -927,10 +928,53 @@ function salvar() {
   gravarDB();
   listarMissoes();
 }
-const linkEstado = () => {
-  const { fechada, ...semTrava } = S;
-  return location.href.split('#')[0] + '#' + btoa(unescape(encodeURIComponent(JSON.stringify(semTrava))));
+/* ===== Link de compartilhar: JSON comprimido (deflate) em Base64 de URL, no formato #z=… ===== */
+const b64url = bytes => {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
+const deB64url = t => {
+  t = t.replace(/-/g, '+').replace(/_/g, '/');
+  while (t.length % 4) t += '=';
+  const bin = atob(t), u = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return u;
+};
+const comprimir = async txt => new Uint8Array(await new Response(new Blob([txt]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());
+const descomprimir = async bytes => new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+// Só o que importa para outra pessoa: sem fechamento, ids e estado de tela
+function estadoParaLink() {
+  const { fechada, id, criada, atualizada, ndMin, ...resto } = clonar(S);
+  resto.encontros.forEach(e => { delete e.min; });
+  return resto;
+}
+async function linkEstado() {
+  const base = location.href.split('#')[0];
+  const json = JSON.stringify(estadoParaLink());
+  if (typeof CompressionStream === 'function') {
+    try { return base + '#z=' + b64url(await comprimir(json)); } catch (e) {}
+  }
+  return base + '#' + btoa(unescape(encodeURIComponent(json)));
+}
+async function importarLinkComprimido() {
+  if (!location.hash.startsWith('#z=')) return;
+  const dado = location.hash.slice(3);
+  history.replaceState(null, '', location.pathname + location.search);
+  try {
+    const s = JSON.parse(await descomprimir(deB64url(dado)));
+    if (!s || !Array.isArray(s.encontros)) throw new Error('formato');
+    const m = normalizar(s);
+    m.id = novoId(); m.nome = (s.nome || 'Missão importada').replace(/( \(link\))+$/, '') + ' (link)';
+    m.criada = m.atualizada = Date.now();
+    if (idVazio && DB.missoes[idVazio]) delete DB.missoes[idVazio];
+    DB.missoes[m.id] = m; gravarDB();
+    abrirMissao(m.id);
+    toast('Missão importada do link');
+  } catch (e) {
+    toast(typeof DecompressionStream === 'function' ? 'Link inválido ou incompleto' : 'Este navegador não abre links comprimidos');
+  }
+}
 
 /* ===== Interface ===== */
 const $ = s => document.querySelector(s);
@@ -1504,7 +1548,7 @@ $('#btn-min-todos').addEventListener('click', () => {
 $('#btn-add-enc').addEventListener('click', () => { S.encontros.push(novoEncontro(S.encontros.length + 1)); montarEncontros(); });
 $('#btn-copy').addEventListener('click', () => copiar(resumoTexto(), 'Resumo copiado'));
 $('#btn-post').addEventListener('click', () => copiar(postagemTexto(), 'Postagem copiada'));
-$('#btn-link').addEventListener('click', () => copiar(linkEstado(), 'Link copiado'));
+$('#btn-link').addEventListener('click', async () => { const l = await linkEstado(); copiar(l, `Link copiado (${fmtNum(l.length)} caracteres)`); });
 $('#btn-theme').addEventListener('click', () => {
   const root = document.documentElement;
   const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
@@ -1968,6 +2012,7 @@ $('#ms-nome').value = S.nome || '';
 listarMissoes();
 montarMissao();
 montarEncontros();
+importarLinkComprimido();
 </script>
 </body>
 </html>
