@@ -1777,15 +1777,14 @@ fx.addEventListener('click', e => {
     copiar(resultadoTexto(), 'Resultado copiado');
   }
 });
+// Texto do "Copiar resultado" (valores por jogador)
 function resultadoTexto() {
-  const r = S.fechada, dif = DIFICULDADES[S.dif];
-  const L = [`**${S.nome}** — ${r.semND ? 'Missão sem ND' : r.resultado === 'falha' ? '❌ Falha' : '✅ Sucesso'}`];
-  if (!r.semND) L.push(`ND ${fmtND(S.nd)} · ${S.post.difLabel || dif.nome} · ${r.jogadores} jogador${r.jogadores > 1 ? 'es' : ''}`);
-  L.push(`XP: ${fmtNum(r.xpPorJog)} por jogador`);
-  if (r.tsPorJog) L.push(`Gold: T$ ${fmtNum(r.tsPorJog)} por jogador`);
-  if (r.pea) L.push(`PeA: ${String(r.pea).replace('.', ',')}`);
-  if (r.obs) L.push('', r.obs);
-  return L.join('\n');
+  const r = S.fechada;
+  return [
+    `🎯 Recompensa da Missão: ${S.nome || 'Missão'}`,
+    `⭐ XP: ${fmtNum(r.xpPorJog)}`,
+    `💰 T$: ${fmtNum(r.tsPorJog)}`,
+  ].join('\n');
 }
 
 /* ===== Lista de missões ===== */
